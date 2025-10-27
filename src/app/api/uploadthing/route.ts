@@ -1,5 +1,5 @@
-import { createNextRouteHandler } from "@uploadthing/next";
-import { createUploadthing, type FileRouter } from "@uploadthing/server";
+import { createNextRouteHandler } from "uploadthing/next";
+import { createUploadthing, type FileRouter } from "uploadthing/server";
 import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
 

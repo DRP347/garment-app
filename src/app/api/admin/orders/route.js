@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
+import { connectDB } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
 import OrderModel from '@/models/OrderModel';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/auth.config';
 
 // // GET all orders for the admin
 export async function GET(req) {

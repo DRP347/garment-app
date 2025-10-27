@@ -1,4 +1,5 @@
-import { auth } from "@/auth";
+import { getServerSession } from "next-auth"; 
+import authOptions from "@/auth.config";
 import { redirect } from "next/navigation";
 import connectDB from "@/lib/db";
 import OrderModel, { IOrder } from "@/models/OrderModel";
