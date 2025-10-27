@@ -1,47 +1,40 @@
-import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
+import { createNextRouteHandler } from "@uploadthing/next";
+import { createUploadthing, type FileRouter, type UploadedFileData } from "@uploadthing/server";
 import { getServerSession } from "next-auth";
 import authOptions from "@/auth.config";
-import dbConnect from "@/lib/db";
-import Product from "@/models/ProductModel";
 
-// Initialize UploadThing securely using env variables
-const uploadthing = createUploadthing({
-  apiKey: process.env.UPLOADTHING_SECRET!,
-  appId: process.env.UPLOADTHING_APP_ID!,
-});
+const f = createUploadthing();
 
-const f = uploadthing.fileRouter();
+interface UploadMetadata {
+  userEmail: string;
+}
 
 export const ourFileRouter = {
   productImage: f({
-    image: { maxFileSize: "8MB", maxFileCount: 6 },
+    image: { maxFileSize: "8MB", maxFileCount: 5 },
   })
     .middleware(async () => {
       const session = await getServerSession(authOptions);
-      if (!session?.user) throw new UploadThingError("Unauthorized");
-      return { userId: session.user.id };
+      if (!session || !session.user?.email) throw new Error("Unauthorized");
+      return { userEmail: session.user.email } as UploadMetadata;
     })
-    .onUploadComplete(
-      async ({ file, metadata }: { file: any; metadata: any }) => {
-        await dbConnect();
-
-        try {
-          // Example: store the uploaded image URL to a product
-          const product = await Product.findOneAndUpdate(
-            { uploadedBy: metadata.userId },
-            { $push: { images: file.url } },
-            { new: true, upsert: true }
-          );
-
-          console.log("✅ Uploaded image saved:", product?._id);
-        } catch (err) {
-          console.error("❌ Failed to save uploaded image:", err);
-        }
-
-        return { uploadedBy: metadata.userId, fileUrl: file.url };
-      }
-    ),
+    .onUploadComplete(async ({
+      file,
+      metadata,
+    }: {
+      file: UploadedFileData;
+      metadata: UploadMetadata;
+    }) => {
+      console.log("✅ Upload complete:", {
+        url: file.url,
+        uploadedBy: metadata.userEmail,
+      });
+      return { uploadedBy: metadata.userEmail, fileUrl: file.url };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;
+
+export const { GET, POST } = createNextRouteHandler({
+  router: ourFileRouter,
+});

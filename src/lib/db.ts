@@ -1,30 +1,39 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-if (!MONGODB_URI) {
-  throw new Error("❌ MONGODB_URI not found in environment variables");
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongoose:
+    | {
+        conn: typeof mongoose | null;
+        promise: Promise<typeof mongoose> | null;
+      }
+    | undefined;
 }
 
-// Global caching (prevents multiple connections on hot reload)
-let cached = global.mongoose as { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null };
-if (!cached) cached = global.mongoose = { conn: null, promise: null };
+const MONGODB_URI = process.env.MONGODB_URI as string;
 
-export default async function dbConnect() {
-  if (cached.conn) return cached.conn;
+if (!MONGODB_URI) {
+  throw new Error("❌ MONGODB_URI is not defined in .env.local");
+}
 
-  if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
+const globalCache = globalThis._mongoose ?? {
+  conn: null,
+  promise: null,
+};
+
+export async function connectDB(): Promise<typeof mongoose> {
+  if (globalCache.conn) return globalCache.conn;
+
+  if (!globalCache.promise) {
+    globalCache.promise = mongoose.connect(MONGODB_URI, {
       dbName: "TheGarmentGuyDB",
       bufferCommands: false,
     });
   }
 
-  try {
-    cached.conn = await cached.promise;
-    return cached.conn;
-  } catch (err) {
-    cached.promise = null;
-    console.error("❌ MongoDB connection failed:", err);
-    throw err;
-  }
+  globalCache.conn = await globalCache.promise;
+  globalThis._mongoose = globalCache;
+  return globalCache.conn;
 }
+
+export default connectDB;
