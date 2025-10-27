@@ -1,0 +1,27 @@
+contact me no. 
+
+## Error Type
+Runtime TypeError
+
+## Error Message
+addToCart is not a function
+
+
+    at onClick (src\app\(public)\products\page.tsx:101:25)
+    at button (<anonymous>:null:null)
+    at eval (src\app\(public)\products\page.tsx:99:21)
+    at Array.map (<anonymous>:null:null)
+    at ProductsPage (src\app\(public)\products\page.tsx:76:23)
+
+## Code Frame
+   99 |                     <button
+  100 |                       onClick={() =>
+> 101 |                         addToCart({
+      |                         ^
+  102 |                           id: p._id,
+  103 |                           name: p.name,
+  104 |                           price: p.price,
+
+Next.js version: 15.5.4 (Webpack)
+when i click on add to cart i get this error and  
+
