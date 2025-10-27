@@ -1,10 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import connectDB from "@/lib/db";
+import { connectDB } from "@/lib/db";
 import User from "@/models/User";
 
-const authConfig: NextAuthOptions = {
+const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -14,10 +14,10 @@ const authConfig: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        await connectDB();
 
+        await connectDB();
         const user = await User.findOne({ email: credentials.email.toLowerCase() }).lean<any>();
-        if (!user || !user.password) return null;
+        if (!user?.password) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
@@ -31,7 +31,7 @@ const authConfig: NextAuthOptions = {
     }),
   ],
 
-  session: { strategy: "jwt" as const },
+  session: { strategy: "jwt" },
 
   callbacks: {
     async jwt({ token, user }: any) {
@@ -43,6 +43,8 @@ const authConfig: NextAuthOptions = {
       return session;
     },
   },
+
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
-export default authConfig;
+export default authOptions;
