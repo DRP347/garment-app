@@ -1,47 +1,44 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
 import Confetti from "react-confetti";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 
-export default function CheckoutSuccessPage() {
-  const router = useRouter();
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams();
-  const orderId = searchParams?.get("orderId") ?? "N/A";
+  const router = useRouter();
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      router.push("/");
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [router]);
+    const id = searchParams?.get("orderId");
+    if (id) setOrderId(id);
+  }, [searchParams]);
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-950 px-6">
-      <Confetti width={window.innerWidth} height={window.innerHeight} />
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="text-center max-w-md"
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center px-4">
+      <Confetti numberOfPieces={200} recycle={false} />
+      <h1 className="text-3xl font-bold text-green-600 mb-4">Order Successful!</h1>
+      <p className="text-gray-700 mb-6">
+        Your order has been placed successfully.
+      </p>
+      {orderId && (
+        <p className="text-gray-500 mb-8">Order ID: <strong>{orderId}</strong></p>
+      )}
+      <button
+        onClick={() => router.push("/")}
+        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg"
       >
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          🎉 Order Successful!
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mb-2">
-          Your order ID: <span className="font-semibold">{orderId}</span>
-        </p>
-        <p className="text-gray-500 mb-8">
-          You’ll be redirected to the home page shortly.
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition"
-        >
-          Back to Home
-        </button>
-      </motion.div>
+        Back to Home
+      </button>
     </div>
+  );
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-gray-500">Loading...</div>}>
+      <CheckoutSuccessContent />
+    </Suspense>
   );
 }
