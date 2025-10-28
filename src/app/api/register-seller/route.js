@@ -1,36 +1,33 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/dbConnect';
-import UserModel from '@/models/UserModel';
-import bcrypt from 'bcryptjs';
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/db";
+import UserModel from "@/models/UserModel";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   try {
-    await dbConnect();
-    const data = await req.json();
-    const { email, password, name, businessName } = data;
+    await connectDB();
+    const body = await req.json();
+    const { name, email, password } = body;
 
-    if (!email || !password || !name || !businessName) {
-      return NextResponse.json({ message: 'All fields are required.' }, { status: 400 });
-    }
+    if (!name || !email || !password)
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
     const existingUser = await UserModel.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json({ message: 'A seller with this email already exists.' }, { status: 409 });
-    }
+    if (existingUser)
+      return NextResponse.json({ error: "Email already exists" }, { status: 400 });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create the new user with the 'seller' role
-    await UserModel.create({
-      ...data,
-      password: hashedPassword,
-      role: 'seller', // Set the role to seller
-      status: 'approved',
+    const hashed = await bcrypt.hash(password, 10);
+    const newUser = new UserModel({
+      name,
+      email,
+      password: hashed,
+      role: "seller",
     });
 
-    return NextResponse.json({ message: 'Seller registration successful!' }, { status: 201 });
-  } catch (error) {
-    console.error('SELLER_REGISTRATION_ERROR:', error);
-    return NextResponse.json({ message: 'An internal server error occurred.' }, { status: 500 });
+    await newUser.save();
+    return NextResponse.json({ message: "Seller registered" }, { status: 201 });
+  } catch (err) {
+    console.error("Error registering seller:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

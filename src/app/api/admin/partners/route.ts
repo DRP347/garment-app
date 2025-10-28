@@ -1,26 +1,22 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import UserModel from '@/models/UserModel';
-import { auth } from '@/auth';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import connectDB from "@/lib/db";
+import UserModel from "@/models/UserModel";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const session = await auth();
-    // Security Check: Only admins can access this route
-    // @ts-ignore
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    await connectDB();
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await connectDB();
-
-    // Fetch all users, but exclude the password field for security
-    const partners = await UserModel.find({}).select('-password').sort({ createdAt: -1 }).lean();
-
+    const partners = await UserModel.find({ role: "seller" }).lean();
     return NextResponse.json(partners, { status: 200 });
-
-  } catch (error: any) {
-    console.error("Error fetching partners:", error);
-    return NextResponse.json({ message: 'Error fetching partners', error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("Error fetching admin partners:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

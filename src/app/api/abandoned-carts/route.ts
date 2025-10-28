@@ -1,43 +1,27 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import AbandonedCartModel from '@/models/AbandonedCartModel';
-import { auth } from '@/auth';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import connectDB from "@/lib/db";
+import AbandonedCartModel from "@/models/AbandonedCartModel";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const session = await auth();
-    // @ts-ignore
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    await connectDB();
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await connectDB();
-
-    const abandonedCarts = await AbandonedCartModel.find({})
-      .populate({
-        path: 'userId',
-        model: 'User', 
-        select: 'name email businessName'
-      })
-      .sort({ lastUpdated: -1 })
+    const carts = await AbandonedCartModel.find({
+      userEmail: session.user.email,
+    })
+      .sort({ timestamp: -1 })
       .lean();
 
-    // Ensure data consistency
-    const cartsWithUser = abandonedCarts.map(cart => {
-        const { userId, ...rest } = cart;
-        return { 
-            ...rest, 
-            user: userId,
-            // Ensure total is never null/undefined in the response
-            total: rest.total || 0, 
-            items: rest.items || []
-        };
-    });
-
-    return NextResponse.json(cartsWithUser, { status: 200 });
-
-  } catch (error: any) {
-    console.error("Error fetching abandoned carts:", error);
-    return NextResponse.json({ message: 'Error fetching abandoned carts', error: error.message }, { status: 500 });
+    return NextResponse.json(carts, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching user abandoned carts:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

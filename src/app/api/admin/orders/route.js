@@ -1,27 +1,20 @@
-import { NextResponse } from 'next/server';
-import { connectDB } from "@/lib/db";
-import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import authOptions from "@/auth.config";
-import OrderModel from '@/models/OrderModel';
-import { authOptions } from '@/auth.config';
+import { getServerSession } from "next-auth";
+import OrderModel from "@/models/OrderModel";
+import connectDB from "@/lib/db";
 
-// // GET all orders for the admin
-export async function GET(req) {
-  const session = await getServerSession(authOptions);
-  if (!session || session.user.role !== 'admin') {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
+export async function GET() {
   try {
-    await dbConnect();
-    // // Fetch all orders and populate the 'userId' field to get user details
-    const orders = await OrderModel.find({})
-      .populate('userId', 'name businessName') // // This joins the user's name and businessName
-      .sort({ createdAt: -1 });
+    await connectDB();
+    const session = await getServerSession(authOptions);
+    if (!session || session.user?.role !== "admin")
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const orders = await OrderModel.find().sort({ createdAt: -1 });
     return NextResponse.json(orders);
-  } catch (error) {
-    console.error("ADMIN_GET_ORDERS_ERROR:", error);
-    return NextResponse.json({ message: 'Server error fetching orders' }, { status: 500 });
+  } catch (err) {
+    console.error("Error fetching orders:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

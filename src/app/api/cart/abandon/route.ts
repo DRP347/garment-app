@@ -1,44 +1,32 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import AbandonedCartModel from '@/models/AbandonedCartModel';
-import { auth } from '@/auth';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import connectDB from "@/lib/db";
+import AbandonedCartModel from "@/models/AbandonedCartModel";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    if (!session || !session.user) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
     await connectDB();
-    const body = await req.json();
-    const { items, total } = body;
-    
-    // @ts-ignore
-    const userId = session.user.id;
+    const session = await getServerSession(authOptions);
 
-    if (!userId || !items || total == null) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const cart = await AbandonedCartModel.findOneAndUpdate(
-      { userId: userId },
-      { 
-        userId: userId,
-        items: items,
-        total: total,
-        lastUpdated: Date.now(),
-      },
-      { 
-        upsert: true, // Creates a new document if one doesn't exist
-        new: true,    // Returns the new, updated document
-      }
-    );
+    const { items } = await req.json();
+    if (!items || !Array.isArray(items)) {
+      return NextResponse.json({ error: "Invalid cart data" }, { status: 400 });
+    }
 
-    return NextResponse.json({ message: 'Abandoned cart saved', cart }, { status: 200 });
+    await AbandonedCartModel.create({
+      userEmail: session.user.email,
+      items,
+      timestamp: new Date(),
+    });
 
-  } catch (error: any) {
-    console.error("Error in /api/cart/abandon:", error);
-    return NextResponse.json({ message: 'Error saving abandoned cart', error: error.message }, { status: 500 });
+    return NextResponse.json({ message: "Cart saved successfully" }, { status: 201 });
+  } catch (error) {
+    console.error("Error saving abandoned cart:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

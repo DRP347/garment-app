@@ -1,20 +1,22 @@
-import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import OrderModel from '@/models/OrderModel';
-import { auth } from '@/auth';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
+import connectDB from "@/lib/db";
+import AbandonedCartModel from "@/models/AbandonedCartModel";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const session = await auth();
-    // @ts-ignore
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
     await connectDB();
-    // Fetch all orders and populate user details
-    const orders = await OrderModel.find({}).populate('userId', 'name email').sort({ createdAt: -1 });
-    return NextResponse.json(orders, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ message: 'Error fetching orders', error: error.message }, { status: 500 });
+    const session = await getServerSession(authOptions);
+
+    if (!session || session.user?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const carts = await AbandonedCartModel.find().sort({ timestamp: -1 }).lean();
+    return NextResponse.json(carts, { status: 200 });
+  } catch (error) {
+    console.error("Error fetching abandoned carts:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

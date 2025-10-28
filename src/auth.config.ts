@@ -1,7 +1,7 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { connectDB } from "@/lib/db";
+import connectDB from "@/lib/db";
 import User from "@/models/User";
 
 const authOptions: NextAuthOptions = {
@@ -14,10 +14,12 @@ const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
         await connectDB();
-        const user = await User.findOne({ email: credentials.email.toLowerCase() }).lean<any>();
-        if (!user?.password) return null;
+
+        const user = await User.findOne({
+          email: credentials.email.toLowerCase(),
+        }).lean<any>();
+        if (!user || !user.password) return null;
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
@@ -34,11 +36,11 @@ const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }) {
       if (user) token.id = user.id;
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (session.user) session.user.id = token.id;
       return session;
     },
