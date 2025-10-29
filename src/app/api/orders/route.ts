@@ -9,9 +9,8 @@ export async function GET() {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const orders = await OrderModel.find({ userEmail: session.user.email })
       .sort({ createdAt: -1 })
@@ -28,20 +27,18 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
-
-    if (!session?.user?.email) {
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { items, totalAmount, address } = await req.json();
-    if (!items || !totalAmount || !address) {
+    if (!items || !totalAmount || !address)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
 
-    // ✅ Fetch logged-in user details
-    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    // ✅ fetch user details
+    const user = await UserModel.findOne({ email: session.user.email })
+      .select("name phone shopName accountType businessName businessType")
+      .lean();
 
-    // ✅ Create and save order
     const newOrder = new OrderModel({
       userEmail: session.user.email,
       items,
@@ -50,40 +47,41 @@ export async function POST(req: Request) {
       status: "Pending",
       createdAt: new Date(),
     });
-
     await newOrder.save();
 
-    // ✅ Generate WhatsApp order message with user details
-    const message = `
-🧾 *New Garment Guy Order!*
+    // ✅ build clean WhatsApp message (UTF-8 safe)
+    const messageLines = [
+      "🧾 *New Garment Guy Order!*",
+      "",
+      `*Order ID:* GG-${newOrder._id.toString().slice(-6).toUpperCase()}`,
+      `*Customer:* ${user?.name || "N/A"}`,
+      `*Phone:* ${user?.phone || "N/A"}`,
+      `*Shop:* ${user?.shopName || user?.businessName || "N/A"}`,
+      `*Account Type:* ${user?.accountType || user?.businessType || "N/A"}`,
+      "",
+      `*Total:* ₹${totalAmount}`,
+      "",
+      "*Items:*",
+      items.map((i: any) => `• ${i.name} x${i.quantity}`).join("\n"),
+      "",
+      "Please confirm my order.",
+    ];
 
-*Order ID:* GG-${newOrder._id.toString().slice(-6).toUpperCase()}
-*Customer:* ${user?.name || "N/A"}
-*Phone:* ${user?.phone || "N/A"}
-*Shop:* ${user?.shopName || user?.businessName || "N/A"}
-*Account Type:* ${user?.accountType || user?.businessType || "N/A"}
+    const message = messageLines.join("\n");
 
-*Total:* ₹${totalAmount}
+    console.log("✅ WhatsApp message ready:\n", message);
 
-*Items:*
-${items.map((i: any) => `• ${i.name} x${i.quantity}`).join("\n")}
+    // optional: redirect to WhatsApp (uncomment when ready)
+    // const waUrl = `https://wa.me/917861988279?text=${encodeURIComponent(message)}`;
+    // await fetch(waUrl);
 
-Please confirm my order.
-    `.trim();
-
-    // ✅ Log to console (you can send this to WhatsApp API later)
-    console.log("🟢 WhatsApp Message:\n", message);
-
-    // Example (optional WhatsApp API integration):
-    // await fetch(`https://api.whatsapp.com/send?phone=917861988279&text=${encodeURIComponent(message)}`);
-
-    return NextResponse.json(
-      {
+    return new NextResponse(
+      JSON.stringify({
         message: "Order created successfully",
         orderId: newOrder._id,
         whatsappMessage: message,
-      },
-      { status: 201 }
+      }),
+      { status: 201, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
   } catch (error) {
     console.error("Error creating order:", error);

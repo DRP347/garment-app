@@ -52,6 +52,7 @@ export default function RegisterPage() {
         <h1 className="text-2xl font-bold text-center text-[#0A3D79]">
           Create Account
         </h1>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-600">Name</label>
@@ -61,7 +62,7 @@ export default function RegisterPage() {
               required
               value={form.name}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             />
           </div>
 
@@ -73,7 +74,7 @@ export default function RegisterPage() {
               required
               value={form.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             />
           </div>
 
@@ -85,22 +86,19 @@ export default function RegisterPage() {
               required
               value={form.password}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             />
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-600">
-              Phone Number
-            </label>
+            <label className="text-sm font-medium text-gray-600">Phone</label>
             <input
               type="tel"
               name="phone"
               required
               value={form.phone}
               onChange={handleChange}
-              placeholder="e.g. +91 78619 88279"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             />
           </div>
 
@@ -111,10 +109,9 @@ export default function RegisterPage() {
             <input
               type="text"
               name="shopName"
-              required
               value={form.shopName}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             />
           </div>
 
@@ -126,7 +123,7 @@ export default function RegisterPage() {
               name="accountType"
               value={form.accountType}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
             >
               <option value="Retailer">Retailer</option>
               <option value="Wholesaler">Wholesaler</option>
