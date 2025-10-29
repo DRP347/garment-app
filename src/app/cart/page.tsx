@@ -25,7 +25,7 @@ export default function CartPage() {
       const orderId = "GG-" + Math.floor(100000 + Math.random() * 900000);
 
       // WhatsApp business number
-      const phone = "918141707400"; // replace with your real number
+      const phone = "917861988279"; // replace with your real number
 
       // WhatsApp message
       const message = encodeURIComponent(
