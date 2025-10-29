@@ -9,7 +9,7 @@ export default function AboutPage() {
       {/* HERO */}
       <section className="relative h-[75vh] flex items-center justify-center text-center text-white">
         <Image
-          src="/image/garment-factory-bg.jpg"
+          src="/image/garment-factory-bg.JPG"
           alt="About The Garment Guy"
           fill
           priority
