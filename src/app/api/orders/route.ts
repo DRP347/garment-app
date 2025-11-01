@@ -5,10 +5,11 @@ import connectDB from "@/lib/db";
 import OrderModel from "@/models/OrderModel";
 import UserModel from "@/models/UserModel";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+
+    const session = await getServerSession({ req: request, ...authOptions });
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -24,19 +25,21 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+
+    const session = await getServerSession({ req: request, ...authOptions });
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { items, totalAmount, address } = await req.json();
+    const { items, totalAmount, address } = await request.json();
     if (!items || !totalAmount || !address) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
+    // Save order in MongoDB
     const newOrder = new OrderModel({
       userEmail: session.user.email,
       items,
@@ -45,15 +48,16 @@ export async function POST(req: Request) {
       status: "Pending",
       createdAt: new Date(),
     });
-
     await newOrder.save();
 
+    // Fetch user details
     const user = await UserModel.findOne({ email: session.user.email }).lean();
     const userName = user?.name || "N/A";
     const userPhone = user?.phone || "N/A";
     const businessName = user?.businessName || "N/A";
     const businessType = user?.businessType || "N/A";
 
+    // Build WhatsApp message
     const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
     const itemsList = items
       .map((item: any) => `• ${item.name} x${item.quantity}`)
