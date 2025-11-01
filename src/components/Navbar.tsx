@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,158 +10,113 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Navbar() {
   const { data: session } = useSession();
   const { cart } = useCart();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    signOut({ callbackUrl: "/login", redirect: true });
-  };
+  const logout = () => signOut({ callbackUrl: "/login" });
 
   return (
-    <nav className="w-full bg-white shadow-md fixed top-0 left-0 z-50 backdrop-blur-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* LOGO + TEXT */}
-          <Link href="/" className="flex items-center gap-3">
-            {/* Logo Image */}
-            <Image
-              src="/image/Logo-Icon.webp"
-              alt="The Garment Guy Logo"
-              width={40}
-              height={40}
-              priority
-              className="object-contain"
-            />
+    <nav className="w-full bg-white fixed top-0 left-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex items-center gap-2">
+          <Image
+            src="/image/Logo-Icon.webp"
+            alt="Logo"
+            width={38}
+            height={38}
+            className="object-contain"
+          />
+          <span className="text-[#0A3D79] font-semibold text-lg sm:text-xl">
+            The Garment Guy
+          </span>
+        </Link>
 
-            {/* Brand Text */}
-            <span className="text-[#0A3D79] font-semibold text-xl tracking-wide hidden sm:block">
-              The Garment Guy
-            </span>
+        <div className="hidden md:flex items-center gap-6">
+          <Link href="/" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+            Home
           </Link>
-
-          {/* DESKTOP NAV LINKS */}
-          <div className="hidden md:flex items-center space-x-6">
-            <Link
-              href="/"
-              className="text-gray-700 hover:text-[#0A3D79] transition font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              className="text-gray-700 hover:text-[#0A3D79] transition font-medium"
-            >
-              About
-            </Link>
-            <Link
-              href="/products"
-              className="text-gray-700 hover:text-[#0A3D79] transition font-medium"
-            >
-              Products
-            </Link>
-
-            {/* Cart */}
-            <Link href="/cart" className="relative text-[#0A3D79]">
-              <ShoppingCart className="w-5 h-5" />
-              {Array.isArray(cart) && cart.length > 0 && (
-                <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                  {cart.length}
-                </span>
-              )}
-            </Link>
-
-            {/* Auth */}
-            {session ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] transition"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            ) : (
-              <Link
-                href="/login"
-                className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-lg hover:bg-[#124E9C] transition font-medium"
-              >
-                Start a Brand
-              </Link>
+          <Link href="/about" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+            About
+          </Link>
+          <Link href="/products" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+            Products
+          </Link>
+          <Link href="/cart" className="relative text-[#0A3D79]">
+            <ShoppingCart className="w-5 h-5" />
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                {cart.length}
+              </span>
             )}
-          </div>
-
-          {/* MOBILE MENU TOGGLE */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden text-[#0A3D79] focus:outline-none"
-          >
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          </Link>
+          {session ? (
+            <button
+              onClick={logout}
+              className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C]"
+            >
+              <LogOut size={16} /> Logout
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C] transition font-medium"
+            >
+              Start a Brand
+            </Link>
+          )}
         </div>
+
+        <button
+          onClick={() => setOpen(!open)}
+          className="md:hidden text-[#0A3D79]"
+        >
+          {open ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
 
-      {/* MOBILE MENU */}
       <AnimatePresence>
-        {menuOpen && (
+        {open && (
           <motion.div
-            key="mobile-menu"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
-            className="md:hidden bg-white border-t border-gray-100 shadow-md"
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-white border-t border-gray-200 shadow-sm"
           >
             <div className="px-6 py-4 space-y-3">
-              <Link
-                href="/"
-                onClick={() => setMenuOpen(false)}
-                className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="/about"
-                onClick={() => setMenuOpen(false)}
-                className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
-              >
-                About
-              </Link>
-              <Link
-                href="/products"
-                onClick={() => setMenuOpen(false)}
-                className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
-              >
-                Products
-              </Link>
-
-              {/* Cart & Auth */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+              {["Home", "About", "Products"].map((label) => (
                 <Link
-                  href="/cart"
-                  onClick={() => setMenuOpen(false)}
-                  className="relative text-[#0A3D79]"
+                  key={label}
+                  href={`/${label === "Home" ? "" : label.toLowerCase()}`}
+                  onClick={() => setOpen(false)}
+                  className="block text-gray-700 hover:text-[#0A3D79]"
                 >
+                  {label}
+                </Link>
+              ))}
+              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                <Link href="/cart" onClick={() => setOpen(false)} className="relative text-[#0A3D79]">
                   <ShoppingCart className="w-5 h-5" />
-                  {Array.isArray(cart) && cart.length > 0 && (
-                    <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  {cart.length > 0 && (
+                    <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
                       {cart.length}
                     </span>
                   )}
                 </Link>
-
                 {session ? (
                   <button
                     onClick={() => {
-                      setMenuOpen(false);
-                      handleLogout();
+                      setOpen(false);
+                      logout();
                     }}
-                    className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] font-medium transition"
+                    className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C]"
                   >
-                    <LogOut className="w-4 h-4" /> Logout
+                    <LogOut size={14} /> Logout
                   </button>
                 ) : (
                   <Link
                     href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-lg hover:bg-[#124E9C] transition font-medium"
+                    onClick={() => setOpen(false)}
+                    className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C]"
                   >
                     Start a Brand
                   </Link>

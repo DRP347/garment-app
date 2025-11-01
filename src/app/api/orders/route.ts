@@ -5,42 +5,38 @@ import connectDB from "@/lib/db";
 import OrderModel from "@/models/OrderModel";
 import UserModel from "@/models/UserModel";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     await connectDB();
-
-    const session = await getServerSession({ req: request, ...authOptions });
-    if (!session || !session.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const orders = await OrderModel.find({ userEmail: session.user.email })
       .sort({ createdAt: -1 })
       .lean();
-
     return NextResponse.json(orders, { status: 200 });
-  } catch (error) {
-    console.error("Error fetching orders:", error);
+  } catch (e) {
+    console.error("Order GET error:", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
     await connectDB();
-
-    const session = await getServerSession({ req: request, ...authOptions });
-    if (!session || !session.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const { items, totalAmount, address } = await request.json();
-    if (!items || !totalAmount || !address) {
+    const { items, totalAmount, address } = await req.json();
+    if (!items || !totalAmount)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
 
-    // Save order in MongoDB
-    const newOrder = new OrderModel({
+    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    await OrderModel.create({
       userEmail: session.user.email,
       items,
       totalAmount,
@@ -48,46 +44,28 @@ export async function POST(request: Request) {
       status: "Pending",
       createdAt: new Date(),
     });
-    await newOrder.save();
 
-    // Fetch user details
-    const user = await UserModel.findOne({ email: session.user.email }).lean();
-    const userName = user?.name || "N/A";
-    const userPhone = user?.phone || "N/A";
-    const businessName = user?.businessName || "N/A";
-    const businessType = user?.businessType || "N/A";
-
-    // Build WhatsApp message
-    const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
-    const itemsList = items
-      .map((item: any) => `• ${item.name} x${item.quantity}`)
-      .join("\n");
-
-    const message = `
+    const msg = `
 🧾 *New Garment Guy Order!*
 
 *Order ID:* ${orderId}
-*Name:* ${userName}
-*Phone:* ${userPhone}
-*Business:* ${businessName}
-*Type:* ${businessType}
+*Name:* ${user?.name || "N/A"}
+*Phone:* ${user?.phone || "N/A"}
+*Business:* ${user?.businessName || "N/A"}
+*Type:* ${user?.businessType || "N/A"}
 *Total:* ₹${totalAmount}
 
 *Items:*
-${itemsList}
+${items.map((i: any) => `• ${i.name} x${i.quantity}`).join("\n")}
 
 Please confirm my order.
     `.trim();
 
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappURL = `https://wa.me/917861988279?text=${encodedMessage}`;
-
-    return NextResponse.json(
-      { message: "Order created successfully", whatsappURL, orderId },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Error creating order:", error);
+    const encoded = encodeURIComponent(msg);
+    const whatsappURL = `https://wa.me/917861988279?text=${encoded}`;
+    return NextResponse.json({ success: true, whatsappURL }, { status: 201 });
+  } catch (e) {
+    console.error("Order POST error:", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

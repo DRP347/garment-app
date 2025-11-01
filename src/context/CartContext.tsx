@@ -4,9 +4,6 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
-// ----------------------
-// Types
-// ----------------------
 interface CartItem {
   id: string;
   name: string;
@@ -26,21 +23,16 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// ----------------------
-// Provider
-// ----------------------
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // ----------------------
   // Load user's cart
-  // ----------------------
   useEffect(() => {
     const loadCart = async () => {
-      if (!session?.user) return; // only load when logged in
+      if (!session?.user?.email) return;
       try {
         setLoading(true);
         const res = await fetch("/api/cart", { credentials: "include" });
@@ -56,49 +48,32 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     loadCart();
   }, [session]);
 
-  // ----------------------
-  // Optimized sync (debounced)
-  // ----------------------
+  // Debounced cart sync
   const syncToDB = async (updatedCart: CartItem[]) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
-
     syncTimer.current = setTimeout(async () => {
-      // ✅ Prevent sync if no logged-in user
-      if (!session?.user?.email && !(session as any)?.user?.id) {
-        console.warn("Skipping cart sync: no user session");
-        return;
-      }
+      const email = session?.user?.email;
+      if (!email) return;
 
       try {
-        const userId = (session as any).user?.id || session.user.email;
-
         const res = await fetch("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId, items: updatedCart }),
+          body: JSON.stringify({ items: updatedCart }),
           credentials: "include",
         });
-
-        if (!res.ok) {
-          const text = await res.text();
-          console.warn("Cart sync failed:", text);
-          return;
-        }
+        if (!res.ok) console.warn("Cart sync failed:", await res.text());
       } catch (err) {
         console.error("❌ Error syncing cart:", err);
       }
     }, 700);
   };
 
-  // ----------------------
-  // Add item
-  // ----------------------
   const addToCart = async (item: CartItem) => {
-    if (!session?.user) {
+    if (!session?.user?.email) {
       toast.error("Please log in to add items");
       return;
     }
-
     setCart((prev) => {
       const existing = prev.find((p) => p.id === item.id);
       const updated = existing
@@ -106,7 +81,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
           )
         : [...prev, { ...item, quantity: 1 }];
-
       queueMicrotask(() =>
         toast.success(existing ? "Quantity updated" : "Added to cart")
       );
@@ -115,9 +89,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  // ----------------------
-  // Remove item
-  // ----------------------
   const removeFromCart = async (id: string) => {
     const updated = cart.filter((item) => item.id !== id);
     setCart(updated);
@@ -125,18 +96,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     queueMicrotask(() => toast.success("Item removed"));
   };
 
-  // ----------------------
-  // Clear cart
-  // ----------------------
   const clearCart = async () => {
     setCart([]);
     queueMicrotask(() => syncToDB([]));
     queueMicrotask(() => toast("Cart cleared"));
   };
 
-  // ----------------------
-  // Update quantity
-  // ----------------------
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return;
     const updated = cart.map((item) =>
@@ -149,23 +114,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <CartContext.Provider
-      value={{
-        cart,
-        loading,
-        addToCart,
-        removeFromCart,
-        clearCart,
-        updateQuantity,
-      }}
+      value={{ cart, loading, addToCart, removeFromCart, clearCart, updateQuantity }}
     >
       {children}
     </CartContext.Provider>
   );
 };
 
-// ----------------------
-// Hook
-// ----------------------
 export const useCart = () => {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error("useCart must be used within CartProvider");
