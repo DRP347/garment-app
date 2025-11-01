@@ -3,19 +3,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 
 export default function CartPage() {
   const { cart, removeFromCart, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
 
-  const total = useMemo(
-    () => cart.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0),
-    [cart]
+  const total = cart.reduce(
+    (sum: number, item: any) => sum + item.price * item.quantity,
+    0
   );
 
-  // ✅ Server-integrated checkout
+  // ✅ Integrated Checkout (keeps same animation)
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Your cart is empty");
@@ -23,39 +23,41 @@ export default function CartPage() {
     }
 
     setLoading(true);
-    try {
-      const payload = {
-        items: cart.map((i) => ({
-          name: i.name,
-          quantity: i.quantity,
-          price: i.price,
-        })),
-        totalAmount: total,
-        address: "N/A",
-      };
 
+    try {
+      // Send order to backend for WhatsApp message creation
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          items: cart.map((i: any) => ({
+            name: i.name,
+            quantity: i.quantity,
+            price: i.price,
+          })),
+          totalAmount: total,
+          address: "N/A",
+        }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Order failed");
+      if (!res.ok) throw new Error(data.error || "Failed to create order");
 
-      toast.success("Order created! Opening WhatsApp...");
-      clearCart();
-
+      // ✅ Open WhatsApp using server-generated URL
       if (data.whatsappURL) {
-        window.open(data.whatsappURL, "_blank");
-        window.location.href = `/checkout-success?orderId=${data.orderId || "NA"}`;
+        setTimeout(() => {
+          clearCart();
+          window.open(data.whatsappURL, "_blank");
+          window.location.href = `/checkout-success?orderId=${data.orderId || "N/A"}`;
+          setLoading(false);
+        }, 1800);
       } else {
-        toast.error("WhatsApp link missing");
+        toast.error("WhatsApp link not received");
+        setLoading(false);
       }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || "Something went wrong");
-    } finally {
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Server error. Try again.");
       setLoading(false);
     }
   };
@@ -75,10 +77,12 @@ export default function CartPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-[#0A3D79] mb-8 text-center">Your Cart</h1>
+      <h1 className="text-3xl font-bold text-[#0A3D79] mb-8 text-center">
+        Your Cart
+      </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Cart Items */}
+        {/* 🧾 Cart Items Section */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {cart.map((item: any) => (
             <div
@@ -97,11 +101,15 @@ export default function CartPage() {
               </div>
 
               <div className="flex flex-col flex-grow text-center sm:text-left">
-                <h2 className="font-semibold text-[#0A3D79] text-lg">{item.name}</h2>
+                <h2 className="font-semibold text-[#0A3D79] text-lg">
+                  {item.name}
+                </h2>
                 <p className="text-gray-500 text-sm">{item.description}</p>
 
                 <div className="flex justify-center sm:justify-start items-center gap-4 mt-3">
-                  <p className="text-[#0A3D79] font-semibold">₹{item.price.toFixed(2)}</p>
+                  <p className="text-[#0A3D79] font-semibold">
+                    ₹{item.price.toFixed(2)}
+                  </p>
                   <p className="text-gray-600 text-sm">× {item.quantity}</p>
                 </div>
 
@@ -120,9 +128,11 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Order Summary */}
+        {/* 💳 Order Summary */}
         <div className="bg-white border rounded-xl shadow-md p-6 h-fit">
-          <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">Order Summary</h2>
+          <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">
+            Order Summary
+          </h2>
 
           <div className="flex justify-between text-gray-700 mb-3">
             <span>Subtotal</span>
@@ -141,6 +151,7 @@ export default function CartPage() {
             <span>₹{total.toFixed(2)}</span>
           </div>
 
+          {/* ✅ Checkout Button with Animation (unchanged) */}
           <button
             disabled={loading}
             onClick={handleCheckout}
@@ -150,9 +161,36 @@ export default function CartPage() {
                 : "hover:bg-[#124E9C] hover:shadow-lg"
             }`}
           >
-            {loading ? "Processing..." : "Proceed to Checkout"}
+            {loading ? (
+              <span className="flex justify-center items-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  ></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              "Proceed to Checkout"
+            )}
           </button>
 
+          {/* 🗑 Clear Cart */}
           <button
             onClick={clearCart}
             className="w-full mt-3 border border-[#0A3D79] text-[#0A3D79] hover:bg-[#0A3D79] hover:text-white font-semibold py-3 rounded-lg transition"
