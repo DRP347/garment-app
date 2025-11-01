@@ -4,20 +4,30 @@ import authOptions from "@/auth.config";
 import connectDB from "@/lib/db";
 import OrderModel from "@/models/OrderModel";
 import UserModel from "@/models/UserModel";
+import mongoose from "mongoose";
 
 export async function GET() {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email)
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const orders = await OrderModel.find({ userEmail: session.user.email })
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    // find user's ObjectId first
+    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    if (!user?._id) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const orders = await OrderModel.find({ userId: user._id })
       .sort({ createdAt: -1 })
       .lean();
+
     return NextResponse.json(orders, { status: 200 });
-  } catch (e) {
-    console.error("Order GET error:", e);
+  } catch (error: any) {
+    console.error("❌ Order GET error:", error?.message || error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -25,26 +35,36 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await connectDB();
+
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email)
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const { items, totalAmount, address } = await req.json();
-    if (!items || !totalAmount)
+    const body = await req.json();
+    const { items, totalAmount, address } = body;
+
+    if (!items?.length || !totalAmount) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
+    // find user and ObjectId
     const user = await UserModel.findOne({ email: session.user.email }).lean();
-    const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!user?._id) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
+    // ✅ create order using userId (required by your schema)
+    const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
     await OrderModel.create({
-      userEmail: session.user.email,
+      userId: new mongoose.Types.ObjectId(user._id),
       items,
-      totalAmount,
-      address,
+      total: totalAmount,
       status: "Pending",
       createdAt: new Date(),
     });
 
+    // ✅ build WhatsApp message
     const msg = `
 🧾 *New Garment Guy Order!*
 
@@ -63,9 +83,13 @@ Please confirm my order.
 
     const encoded = encodeURIComponent(msg);
     const whatsappURL = `https://wa.me/917861988279?text=${encoded}`;
-    return NextResponse.json({ success: true, whatsappURL }, { status: 201 });
-  } catch (e) {
-    console.error("Order POST error:", e);
+
+    return NextResponse.json(
+      { success: true, whatsappURL, orderId },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error("❌ Order POST error:", error?.message || error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
