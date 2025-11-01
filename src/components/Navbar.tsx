@@ -21,37 +21,25 @@ export default function Navbar() {
     <nav className="w-full bg-white shadow-md fixed top-0 left-0 z-50 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo Section */}
-          <Link href="/" className="flex items-center gap-2">
-            {/* Desktop logo */}
-            <div className="hidden md:flex items-center gap-2">
-              <Image
-                src="/image/Logo.webp"
-                alt="The Garment Guy"
-                width={140}
-                height={45}
-                priority
-                className="object-contain"
-              />
-            </div>
+          {/* LOGO + TEXT */}
+          <Link href="/" className="flex items-center gap-3">
+            {/* Logo Image */}
+            <Image
+              src="/image/Logo-Icon.webp"
+              alt="The Garment Guy Logo"
+              width={40}
+              height={40}
+              priority
+              className="object-contain"
+            />
 
-            {/* Mobile icon + text */}
-            <div className="flex md:hidden items-center gap-2">
-              <Image
-                src="/image/Logo-Icon.webp"
-                alt="The Garment Guy Icon"
-                width={35}
-                height={35}
-                priority
-                className="object-contain"
-              />
-              <span className="text-[#0A3D79] font-semibold text-lg tracking-wide">
-                The Garment Guy
-              </span>
-            </div>
+            {/* Brand Text */}
+            <span className="text-[#0A3D79] font-semibold text-xl tracking-wide hidden sm:block">
+              The Garment Guy
+            </span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* DESKTOP NAV LINKS */}
           <div className="hidden md:flex items-center space-x-6">
             <Link
               href="/"
@@ -101,7 +89,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* MOBILE MENU TOGGLE */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="md:hidden text-[#0A3D79] focus:outline-none"
@@ -111,7 +99,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* MOBILE MENU */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
