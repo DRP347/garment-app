@@ -40,7 +40,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // ----------------------
   useEffect(() => {
     const loadCart = async () => {
-      if (!session?.user) return;
+      if (!session?.user) return; // only load when logged in
       try {
         setLoading(true);
         const res = await fetch("/api/cart", { credentials: "include" });
@@ -63,11 +63,19 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
 
     syncTimer.current = setTimeout(async () => {
+      // ✅ Prevent sync if no logged-in user
+      if (!session?.user?.email && !(session as any)?.user?.id) {
+        console.warn("Skipping cart sync: no user session");
+        return;
+      }
+
       try {
+        const userId = (session as any).user?.id || session.user.email;
+
         const res = await fetch("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: updatedCart }),
+          body: JSON.stringify({ userId, items: updatedCart }),
           credentials: "include",
         });
 
@@ -79,7 +87,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (err) {
         console.error("❌ Error syncing cart:", err);
       }
-    }, 700); // debounce for 700ms
+    }, 700);
   };
 
   // ----------------------
