@@ -3,9 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { Factory, ShieldCheck, Leaf, Quote, Phone, Mail } from "lucide-react";
 
 export default function HomePage() {
+  const { data: session } = useSession();
+
   return (
     <main className="bg-[#F9FAFB] text-[#0A3D79]">
       {/* HERO */}
@@ -31,19 +34,44 @@ export default function HomePage() {
             <p className="text-white/90 text-lg mb-10">
               Premium Garment Manufacturing for Modern Brands.
             </p>
+
             <div className="flex justify-center gap-4 flex-wrap">
-              <Link
-                href="/register"
-                className="bg-white text-[#0A3D79] px-6 py-3 rounded-md font-semibold hover:bg-gray-100 transition"
+              {/* Start a Brand - hidden when logged in */}
+              {!session && (
+                <Link
+                  href="/register"
+                  className="bg-white text-[#0A3D79] px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition shadow-md"
+                >
+                  Start a Brand
+                </Link>
+              )}
+
+              {/* Animated Explore Products */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+                className="relative group"
               >
-                Start a Brand
-              </Link>
-              <Link
-                href="/products"
-                className="border border-white text-white px-6 py-3 rounded-md font-semibold hover:bg-white hover:text-[#0A3D79] transition"
-              >
-                Explore Products
-              </Link>
+                <Link
+                  href="/products"
+                  className="border-2 border-white text-white px-8 py-3 rounded-md font-semibold 
+                  hover:bg-white hover:text-[#0A3D79] transition relative z-10"
+                >
+                  Explore Products
+                </Link>
+                <motion.span
+                  animate={{
+                    opacity: [0.5, 1, 0.5],
+                    scale: [1, 1.04, 1],
+                  }}
+                  transition={{
+                    repeat: Infinity,
+                    duration: 2.5,
+                    ease: "easeInOut",
+                  }}
+                  className="absolute inset-0 rounded-md border-2 border-white/40 blur-sm"
+                />
+              </motion.div>
             </div>
           </motion.div>
         </div>
@@ -205,15 +233,34 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">Contact Us</h2>
           <form className="bg-[#F9FAFB] text-[#0A3D79] rounded-2xl p-8 shadow-lg space-y-5">
-            <input type="text" placeholder="Your Name" className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]" />
-            <input type="email" placeholder="Your Email" className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]" />
-            <input type="tel" placeholder="Your Phone Number" className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]" />
-            <textarea placeholder="Your Message" rows={4} className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]" />
-            <button type="submit" className="w-full bg-[#0A3D79] text-white py-3 rounded-md font-semibold hover:bg-[#124E9C] transition">
+            <input
+              type="text"
+              placeholder="Your Name"
+              className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]"
+            />
+            <input
+              type="email"
+              placeholder="Your Email"
+              className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]"
+            />
+            <input
+              type="tel"
+              placeholder="Your Phone Number"
+              className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]"
+            />
+            <textarea
+              placeholder="Your Message"
+              rows={4}
+              className="w-full border rounded-md p-3 focus:ring-2 focus:ring-[#0A3D79]"
+            />
+            <button
+              type="submit"
+              className="w-full bg-[#0A3D79] text-white py-3 rounded-md font-semibold hover:bg-[#124E9C] transition"
+            >
               Send Message
             </button>
             <p className="text-sm text-gray-600 mt-3">
-              Or reach us on {" "}
+              Or reach us on{" "}
               <a
                 href="https://wa.me/917861988279"
                 target="_blank"
@@ -238,9 +285,21 @@ export default function HomePage() {
           <div>
             <h4 className="font-semibold mb-3">Quick Links</h4>
             <ul className="space-y-2 text-sm text-white/80">
-              <li><Link href="/products" className="hover:text-white">Products</Link></li>
-              <li><a href="/#about" className="hover:text-white">About</a></li>
-              <li><a href="/#contact" className="hover:text-white">Contact</a></li>
+              <li>
+                <Link href="/products" className="hover:text-white">
+                  Products
+                </Link>
+              </li>
+              <li>
+                <a href="/#about" className="hover:text-white">
+                  About
+                </a>
+              </li>
+              <li>
+                <a href="/#contact" className="hover:text-white">
+                  Contact
+                </a>
+              </li>
             </ul>
           </div>
           <div>
@@ -248,7 +307,11 @@ export default function HomePage() {
             <p className="text-white/80 text-sm">
               Daman, India <br />
               <Phone size={14} className="inline mx-1" />{" "}
-              <a href="https://wa.me/917861988279" target="_blank" className="hover:underline">
+              <a
+                href="https://wa.me/917861988279"
+                target="_blank"
+                className="hover:underline"
+              >
                 +91 78619 88279
               </a>
               <br />

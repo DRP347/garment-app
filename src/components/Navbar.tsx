@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useSession, signOut } from "next-auth/react";
@@ -21,14 +22,32 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link
-            href="/"
-            className="text-xl sm:text-2xl font-semibold text-[#0A3D79] hover:text-[#124E9C] transition-all duration-200"
-          >
-            The Garment Guy
+          <Link href="/" className="flex items-center gap-2">
+            {/* Desktop logo */}
+            <div className="hidden md:block">
+              <Image
+                src="/image/Logo.webp"
+                alt="The Garment Guy"
+                width={150}
+                height={45}
+                priority
+                className="object-contain"
+              />
+            </div>
+            {/* Mobile icon */}
+            <div className="md:hidden">
+              <Image
+                src="/image/Logo-Icon.webp"
+                alt="The Garment Guy"
+                width={40}
+                height={40}
+                priority
+                className="object-contain"
+              />
+            </div>
           </Link>
 
-          {/* Desktop Links */}
+          {/* Desktop links */}
           <div className="hidden md:flex items-center space-x-6">
             <Link
               href="/"
@@ -88,7 +107,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Animated Menu */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
