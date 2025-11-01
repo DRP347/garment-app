@@ -9,8 +9,9 @@ export async function GET() {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email)
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const orders = await OrderModel.find({ userEmail: session.user.email })
       .sort({ createdAt: -1 })
@@ -27,18 +28,16 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email)
+    if (!session || !session.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { items, totalAmount, address } = await req.json();
-    if (!items || !totalAmount || !address)
+    if (!items || !totalAmount || !address) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
-    // ✅ fetch user details
-    const user = await UserModel.findOne({ email: session.user.email })
-      .select("name phone shopName accountType businessName businessType")
-      .lean();
-
+    // Save order
     const newOrder = new OrderModel({
       userEmail: session.user.email,
       items,
@@ -47,41 +46,45 @@ export async function POST(req: Request) {
       status: "Pending",
       createdAt: new Date(),
     });
+
     await newOrder.save();
 
-    // ✅ build clean WhatsApp message (UTF-8 safe)
-    const messageLines = [
-      "🧾 *New Garment Guy Order!*",
-      "",
-      `*Order ID:* GG-${newOrder._id.toString().slice(-6).toUpperCase()}`,
-      `*Customer:* ${user?.name || "N/A"}`,
-      `*Phone:* ${user?.phone || "N/A"}`,
-      `*Shop:* ${user?.shopName || user?.businessName || "N/A"}`,
-      `*Account Type:* ${user?.accountType || user?.businessType || "N/A"}`,
-      "",
-      `*Total:* ₹${totalAmount}`,
-      "",
-      "*Items:*",
-      items.map((i: any) => `• ${i.name} x${i.quantity}`).join("\n"),
-      "",
-      "Please confirm my order.",
-    ];
+    // Fetch user details
+    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    const userName = user?.name || "N/A";
+    const userPhone = user?.phone || "N/A";
+    const businessName = user?.businessName || "N/A";
+    const businessType = user?.businessType || "N/A";
 
-    const message = messageLines.join("\n");
+    // Build WhatsApp message
+    const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
+    const itemsList = items
+      .map((item: any) => `• ${item.name} x${item.quantity}`)
+      .join("\n");
 
-    console.log("✅ WhatsApp message ready:\n", message);
+    const message = `
+🧾 *New Garment Guy Order!*
 
-    // optional: redirect to WhatsApp (uncomment when ready)
-    // const waUrl = `https://wa.me/917861988279?text=${encodeURIComponent(message)}`;
-    // await fetch(waUrl);
+*Order ID:* ${orderId}
+*Name:* ${userName}
+*Phone:* ${userPhone}
+*Business:* ${businessName}
+*Type:* ${businessType}
+*Total:* ₹${totalAmount}
 
-    return new NextResponse(
-      JSON.stringify({
-        message: "Order created successfully",
-        orderId: newOrder._id,
-        whatsappMessage: message,
-      }),
-      { status: 201, headers: { "Content-Type": "application/json; charset=utf-8" } }
+*Items:*
+${itemsList}
+
+Please confirm my order.
+    `.trim();
+
+    // WhatsApp redirect link (encoded)
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/917861988279?text=${encodedMessage}`;
+
+    return NextResponse.json(
+      { message: "Order created successfully", whatsappURL },
+      { status: 201 }
     );
   } catch (error) {
     console.error("Error creating order:", error);
