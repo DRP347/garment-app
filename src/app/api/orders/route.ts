@@ -37,7 +37,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // Save order
     const newOrder = new OrderModel({
       userEmail: session.user.email,
       items,
@@ -49,14 +48,12 @@ export async function POST(req: Request) {
 
     await newOrder.save();
 
-    // Fetch user details
     const user = await UserModel.findOne({ email: session.user.email }).lean();
     const userName = user?.name || "N/A";
     const userPhone = user?.phone || "N/A";
     const businessName = user?.businessName || "N/A";
     const businessType = user?.businessType || "N/A";
 
-    // Build WhatsApp message
     const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
     const itemsList = items
       .map((item: any) => `• ${item.name} x${item.quantity}`)
@@ -78,12 +75,11 @@ ${itemsList}
 Please confirm my order.
     `.trim();
 
-    // WhatsApp redirect link (encoded)
     const encodedMessage = encodeURIComponent(message);
     const whatsappURL = `https://wa.me/917861988279?text=${encodedMessage}`;
 
     return NextResponse.json(
-      { message: "Order created successfully", whatsappURL },
+      { message: "Order created successfully", whatsappURL, orderId },
       { status: 201 }
     );
   } catch (error) {
