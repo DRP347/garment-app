@@ -12,73 +12,64 @@ export default function HomePage() {
   return (
     <main className="bg-[#F9FAFB] text-[#0A3D79] scroll-smooth">
       {/* HERO */}
-      <section className="relative h-[90vh] w-full overflow-hidden">
-        <Image
-          src="/image/hero.webp"
-          alt="Garment Manufacturing"
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover scale-105 brightness-[0.85]"
-        />
-        <div className="absolute inset-0 bg-[#0A3D79]/60 backdrop-blur-[1px]" />
+      {/* HERO */}
+<section className="relative h-[90vh] w-full overflow-hidden">
+  <Image
+    src="/image/hero.webp"
+    alt="Garment Manufacturing"
+    fill
+    priority
+    sizes="100vw"
+    className="object-cover scale-105 brightness-[0.85]"
+  />
+  <div className="absolute inset-0 bg-[#0A3D79]/60 backdrop-blur-[1px]" />
 
-        {/* HERO CONTENT */}
-        <div className="absolute inset-0 flex items-center justify-center text-center px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
-            className="max-w-3xl mx-auto"
+  {/* HERO CONTENT */}
+  <div className="absolute inset-0 flex items-center justify-center text-center px-6">
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
+      className="max-w-3xl mx-auto"
+    >
+      <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
+        Crafting Excellence in Every Stitch
+      </h1>
+      <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
+        Premium Garment Manufacturing for Modern Brands.
+      </p>
+
+      {/* Buttons Row */}
+      <div className="flex justify-center gap-4 flex-wrap">
+        {/* Start a Brand */}
+        {!session && (
+          <Link
+            href="/register"
+            className="bg-white text-[#0A3D79] px-8 py-3 rounded-full font-semibold shadow-md hover:bg-gray-100 transition-all"
           >
-            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
-              Crafting Excellence in Every Stitch
-            </h1>
-            <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
-              Premium Garment Manufacturing for Modern Brands.
-            </p>
+            Start a Brand
+          </Link>
+        )}
 
-            <div className="flex justify-center gap-4 flex-wrap">
-              {!session && (
-                <Link
-                  href="/register"
-                  className="bg-white text-[#0A3D79] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md"
-                >
-                  Start a Brand
-                </Link>
-              )}
+        {/* Explore Products — new glass-style button */}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Link
+            href="/products"
+            className="relative px-8 py-3 rounded-full font-semibold border border-white/70 text-white backdrop-blur-sm bg-white/10 hover:bg-white/20 hover:border-white transition-all shadow-md"
+          >
+            Explore Products
+          </Link>
+        </motion.div>
+      </div>
+    </motion.div>
+  </div>
 
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                className="relative group"
-              >
-                <Link
-                  href="/products"
-                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#0A3D79] transition relative z-10"
-                >
-                  Explore Products
-                </Link>
-                <motion.span
-                  animate={{
-                    opacity: [0.6, 1, 0.6],
-                    scale: [1, 1.05, 1],
-                  }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 2.8,
-                    ease: "easeInOut",
-                  }}
-                  className="absolute inset-0 rounded-lg border-2 border-white/40 blur-sm"
-                />
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Subtle Gradient Fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#F9FAFB] to-transparent" />
-      </section>
+  {/* Gradient Fade */}
+  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#F9FAFB] to-transparent" />
+</section>
 
       {/* WHY CHOOSE US */}
       <section className="max-w-6xl mx-auto py-24 px-6 text-center" id="why">
