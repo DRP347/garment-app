@@ -1,4 +1,5 @@
 "use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -15,43 +16,62 @@ export default function Navbar() {
   const logout = () => signOut({ callbackUrl: "/login" });
 
   return (
-    <nav className="w-full bg-white fixed top-0 left-0 z-50 shadow-sm">
+    <nav className="w-full bg-white fixed top-0 left-0 z-50 shadow-sm backdrop-blur-lg">
       <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
+        {/* 🔵 Logo Pill */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 bg-[#0A3D79] hover:bg-[#124E9C] text-white px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 shadow-sm"
+        >
           <Image
             src="/image/Logo-Icon.webp"
-            alt="Logo"
-            width={38}
-            height={38}
-            className="object-contain"
+            alt="The Garment Guy Logo"
+            width={28}
+            height={28}
+            priority
+            className="object-contain bg-white rounded-full p-0.5"
           />
-          <span className="text-[#0A3D79] font-semibold text-lg sm:text-xl">
+          <span className="font-semibold text-sm sm:text-base tracking-wide">
             The Garment Guy
           </span>
         </Link>
 
+        {/* 🌐 Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          <Link href="/" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+          <Link
+            href="/"
+            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
+          >
             Home
           </Link>
-          <Link href="/about" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+          <Link
+            href="/about"
+            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
+          >
             About
           </Link>
-          <Link href="/products" className="text-gray-700 hover:text-[#0A3D79] font-medium">
+          <Link
+            href="/products"
+            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
+          >
             Products
           </Link>
+
+          {/* 🛒 Cart */}
           <Link href="/cart" className="relative text-[#0A3D79]">
             <ShoppingCart className="w-5 h-5" />
-            {cart.length > 0 && (
-              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+            {Array.isArray(cart) && cart.length > 0 && (
+              <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                 {cart.length}
               </span>
             )}
           </Link>
+
+          {/* 🔐 Auth */}
           {session ? (
             <button
               onClick={logout}
-              className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C]"
+              className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] font-medium transition"
             >
               <LogOut size={16} /> Logout
             </button>
@@ -65,22 +85,25 @@ export default function Navbar() {
           )}
         </div>
 
+        {/* 📱 Mobile Menu Toggle */}
         <button
           onClick={() => setOpen(!open)}
-          className="md:hidden text-[#0A3D79]"
+          className="md:hidden text-[#0A3D79] focus:outline-none"
         >
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
+      {/* 📱 Mobile Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
+            key="mobile-menu"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden bg-white border-t border-gray-200 shadow-sm"
+            transition={{ duration: 0.25 }}
+            className="md:hidden bg-white border-t border-gray-100 shadow-sm"
           >
             <div className="px-6 py-4 space-y-3">
               {["Home", "About", "Products"].map((label) => (
@@ -88,27 +111,33 @@ export default function Navbar() {
                   key={label}
                   href={`/${label === "Home" ? "" : label.toLowerCase()}`}
                   onClick={() => setOpen(false)}
-                  className="block text-gray-700 hover:text-[#0A3D79]"
+                  className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
                 >
                   {label}
                 </Link>
               ))}
-              <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                <Link href="/cart" onClick={() => setOpen(false)} className="relative text-[#0A3D79]">
+
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <Link
+                  href="/cart"
+                  onClick={() => setOpen(false)}
+                  className="relative text-[#0A3D79]"
+                >
                   <ShoppingCart className="w-5 h-5" />
-                  {cart.length > 0 && (
-                    <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                  {Array.isArray(cart) && cart.length > 0 && (
+                    <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                       {cart.length}
                     </span>
                   )}
                 </Link>
+
                 {session ? (
                   <button
                     onClick={() => {
                       setOpen(false);
                       logout();
                     }}
-                    className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C]"
+                    className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] font-medium transition"
                   >
                     <LogOut size={14} /> Logout
                   </button>
@@ -116,7 +145,7 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setOpen(false)}
-                    className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C]"
+                    className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C] transition font-medium"
                   >
                     Start a Brand
                   </Link>
