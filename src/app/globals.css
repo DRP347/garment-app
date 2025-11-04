@@ -13,12 +13,21 @@
 body {
   background-color: var(--color-bg);
   color: var(--color-text);
+  font-family: 'Inter', sans-serif;
+  scroll-behavior: smooth;
 }
 
+/* Smooth hover transitions for all clickable elements */
+button, a {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Global button style (reusable) */
 .btn-primary {
   @apply bg-[var(--color-primary)] text-white font-semibold px-5 py-2 rounded-lg hover:bg-[var(--color-primary-light)] transition;
 }
 
+/* Responsive & overflow fixes */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
