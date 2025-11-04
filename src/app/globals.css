@@ -5,7 +5,7 @@
 :root {
   --color-primary: #0A3D79;
   --color-primary-light: #124E9C;
-  --color-accent: #FFC857; /* Amber/Gold */
+  --color-accent: #FFC857;
   --color-bg: #F8FAFC;
   --color-text: #0F172A;
 }
@@ -17,22 +17,37 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Smooth hover transitions for all clickable elements */
 button, a {
   transition: all 0.2s ease-in-out;
 }
 
-/* Global button style (reusable) */
+/* Global primary button utility */
 .btn-primary {
   @apply bg-[var(--color-primary)] text-white font-semibold px-5 py-2 rounded-lg hover:bg-[var(--color-primary-light)] transition;
 }
 
-/* Responsive & overflow fixes */
+/* Responsive refinements */
 @media (max-width: 768px) {
   body {
     overflow-x: hidden;
   }
   img {
     max-height: 75vh;
+  }
+}
+
+/* Hero mobile alignment and text scaling */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.9rem;
+    line-height: 2.3rem;
+  }
+
+  a, button {
+    font-size: 0.9rem;
+  }
+
+  .rounded-full {
+    border-radius: 9999px;
   }
 }

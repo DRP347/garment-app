@@ -12,56 +12,52 @@ export default function HomePage() {
   return (
     <main className="bg-[#F9FAFB] text-[#0A3D79] scroll-smooth">
       {/* HERO */}
-      <section className="relative h-[90vh] w-full overflow-hidden">
+      <section className="relative h-[85vh] md:h-[80vh] w-full overflow-hidden flex items-center justify-center">
         <Image
           src="/image/hero.webp"
           alt="Garment Manufacturing"
           fill
           priority
           sizes="100vw"
-          className="object-cover scale-105 brightness-[0.85]"
+          className="object-cover brightness-[0.85]"
         />
-        <div className="absolute inset-0 bg-[#0A3D79]/60 backdrop-blur-[1px]" />
+        <div className="absolute inset-0 bg-[#0A3D79]/65 backdrop-blur-[1px]" />
 
-        {/* HERO CONTENT */}
-        <div className="absolute inset-0 flex items-center justify-center text-center px-6">
+        <div className="relative z-10 text-center px-4 sm:px-6 md:px-8">
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, ease: "easeOut" }}
+            transition={{ duration: 0.8 }}
             className="max-w-3xl mx-auto"
           >
-            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white mb-4 leading-tight">
               Crafting Excellence in Every Stitch
             </h1>
-            <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
+            <p className="text-white/90 text-base sm:text-lg md:text-xl mb-8 md:mb-10">
               Premium Garment Manufacturing for Modern Brands.
             </p>
 
-            {/* BUTTONS */}
-            <div className="flex justify-center gap-4 flex-wrap">
+            {/* Buttons */}
+            <div className="flex justify-center flex-wrap gap-3 md:gap-4">
               {!session && (
                 <Link
                   href="/register"
-                  className="bg-white text-[#0A3D79] px-8 py-3 rounded-full font-semibold shadow-md hover:bg-gray-100 transition-all"
+                  className="bg-white text-[#0A3D79] px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold shadow-md hover:bg-gray-100 transition-all"
                 >
                   Start a Brand
                 </Link>
               )}
-              <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
-                <Link
-                  href="/products"
-                  className="relative px-8 py-3 rounded-full font-semibold border border-white/70 text-white backdrop-blur-sm bg-white/10 hover:bg-white/20 hover:border-white transition-all shadow-md"
-                >
-                  Explore Products
-                </Link>
-              </motion.div>
+              <Link
+                href="/products"
+                className="border border-white/70 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full font-semibold bg-white/10 hover:bg-white/20 backdrop-blur-sm shadow-md transition-all"
+              >
+                Explore Products
+              </Link>
             </div>
           </motion.div>
         </div>
 
-        {/* Gradient Fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#F9FAFB] to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-gradient-to-t from-[#F9FAFB] to-transparent" />
       </section>
 
       {/* WHY CHOOSE US */}
@@ -331,3 +327,4 @@ export default function HomePage() {
     </main>
   );
 }
+  
