@@ -10,7 +10,7 @@ export default function HomePage() {
   const { data: session } = useSession();
 
   return (
-    <main className="bg-[#F9FAFB] text-[#0A3D79]">
+    <main className="bg-[#F9FAFB] text-[#0A3D79] scroll-smooth">
       {/* HERO */}
       <section className="relative h-[90vh] w-full overflow-hidden">
         <Image
@@ -19,34 +19,35 @@ export default function HomePage() {
           fill
           priority
           sizes="100vw"
-          className="object-cover"
+          className="object-cover scale-105 brightness-[0.85]"
         />
-        <div className="absolute inset-0 bg-[#0A3D79]/60" />
+        <div className="absolute inset-0 bg-[#0A3D79]/60 backdrop-blur-[1px]" />
+
+        {/* HERO CONTENT */}
         <div className="absolute inset-0 flex items-center justify-center text-center px-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="max-w-3xl mx-auto"
           >
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 leading-tight drop-shadow-md">
               Crafting Excellence in Every Stitch
             </h1>
-            <p className="text-white/90 text-lg mb-10">
+            <p className="text-white/90 text-lg md:text-xl mb-10 leading-relaxed">
               Premium Garment Manufacturing for Modern Brands.
             </p>
 
             <div className="flex justify-center gap-4 flex-wrap">
-              {/* Start a Brand - hidden when logged in */}
               {!session && (
                 <Link
                   href="/register"
-                  className="bg-white text-[#0A3D79] px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition shadow-md"
+                  className="bg-white text-[#0A3D79] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-md"
                 >
                   Start a Brand
                 </Link>
               )}
 
-              {/* Animated Explore Products */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.3 }}
@@ -54,101 +55,120 @@ export default function HomePage() {
               >
                 <Link
                   href="/products"
-                  className="border-2 border-white text-white px-8 py-3 rounded-md font-semibold 
-                  hover:bg-white hover:text-[#0A3D79] transition relative z-10"
+                  className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-[#0A3D79] transition relative z-10"
                 >
                   Explore Products
                 </Link>
                 <motion.span
                   animate={{
-                    opacity: [0.5, 1, 0.5],
-                    scale: [1, 1.04, 1],
+                    opacity: [0.6, 1, 0.6],
+                    scale: [1, 1.05, 1],
                   }}
                   transition={{
                     repeat: Infinity,
-                    duration: 2.5,
+                    duration: 2.8,
                     ease: "easeInOut",
                   }}
-                  className="absolute inset-0 rounded-md border-2 border-white/40 blur-sm"
+                  className="absolute inset-0 rounded-lg border-2 border-white/40 blur-sm"
                 />
               </motion.div>
             </div>
           </motion.div>
         </div>
+
+        {/* Subtle Gradient Fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-[#F9FAFB] to-transparent" />
       </section>
 
       {/* WHY CHOOSE US */}
-      <section className="max-w-6xl mx-auto py-20 px-6 text-center" id="why">
-        <h2 className="text-3xl font-bold mb-6">Why Choose Us</h2>
-        <p className="text-gray-700 max-w-3xl mx-auto mb-12">
-          We combine craftsmanship, innovation, and ethical manufacturing to help brands
-          produce with confidence.
+      <section className="max-w-6xl mx-auto py-24 px-6 text-center" id="why">
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          Why Choose Us
+        </h2>
+        <p className="text-gray-700 max-w-3xl mx-auto mb-14">
+          We combine craftsmanship, innovation, and ethical manufacturing to
+          help brands produce with confidence.
         </p>
         <div className="grid md:grid-cols-3 gap-8">
           {[
             {
-              icon: <Factory size={36} />,
+              icon: <Factory size={40} />,
               title: "End-to-End Production",
               desc: "Design, sourcing, stitching, and shipping — everything under one roof.",
             },
             {
-              icon: <ShieldCheck size={36} />,
+              icon: <ShieldCheck size={40} />,
               title: "Quality & Reliability",
               desc: "Multi-stage inspections ensure flawless output every time.",
             },
             {
-              icon: <Leaf size={36} />,
+              icon: <Leaf size={40} />,
               title: "Sustainability",
               desc: "Eco-friendly materials and ethical labor practices.",
             },
           ].map((item) => (
             <motion.div
               key={item.title}
-              whileHover={{ scale: 1.05 }}
-              className="bg-white rounded-xl shadow p-8 hover:shadow-lg transition"
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="bg-white rounded-xl shadow-md hover:shadow-xl p-10 transition-all border border-gray-100"
             >
               <div className="mb-4 flex justify-center text-[#0A3D79]">
                 {item.icon}
               </div>
               <h3 className="font-semibold text-xl mb-2">{item.title}</h3>
-              <p className="text-gray-600 text-sm">{item.desc}</p>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {item.desc}
+              </p>
             </motion.div>
           ))}
         </div>
       </section>
 
       {/* ABOUT */}
-      <section className="bg-[#0A3D79]/5 py-20" id="about">
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-          <Image
-            src="/image/about-team.webp"
-            alt="About The Garment Guy"
-            width={600}
-            height={420}
-            className="rounded-xl shadow-lg object-cover w-full h-auto"
-          />
-          <div>
-            <h2 className="text-3xl font-bold mb-6">About The Garment Guy</h2>
+      <section className="bg-[#0A3D79]/5 py-24" id="about">
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-14 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <Image
+              src="/image/about-team.webp"
+              alt="About The Garment Guy"
+              width={600}
+              height={420}
+              className="rounded-xl shadow-lg object-cover w-full h-auto"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl font-bold mb-6">
+              About The Garment Guy
+            </h2>
             <p className="text-gray-700 mb-4 leading-relaxed">
-              The Garment Guy is a full-service apparel manufacturer bridging global
-              brands with world-class garment production in India. We transform design
-              concepts into production-ready collections.
+              The Garment Guy is a full-service apparel manufacturer bridging
+              global brands with world-class production in India. We transform
+              design concepts into production-ready collections.
             </p>
             <p className="text-gray-700 mb-4 leading-relaxed">
-              We focus on craftsmanship, reliability, and ethical operations — every
-              garment produced reflects precision and passion.
+              We focus on craftsmanship, reliability, and ethical operations —
+              every garment produced reflects precision and passion.
             </p>
             <p className="text-gray-700 leading-relaxed">
-              We empower startups and established labels to scale seamlessly with
-              transparency, trust, and innovation.
+              We empower startups and established labels to scale seamlessly
+              with transparency, trust, and innovation.
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* PROCESS */}
-      <section className="py-20 bg-gray-50 text-center">
-        <h2 className="text-3xl font-bold text-blue-900 mb-12">
+      <section className="py-24 bg-gray-50 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0A3D79] mb-14">
           Our Manufacturing Process
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 max-w-6xl mx-auto px-6">
@@ -162,12 +182,12 @@ export default function HomePage() {
             <motion.div
               key={i}
               whileHover={{ y: -5 }}
-              className="bg-white p-6 rounded-lg shadow hover:shadow-md transition"
+              className="bg-white p-6 rounded-lg shadow hover:shadow-lg border border-gray-100 transition"
             >
-              <div className="text-blue-800 text-2xl font-bold mb-2">
+              <div className="text-[#0A3D79] text-2xl font-bold mb-2">
                 {i + 1}
               </div>
-              <h3 className="font-semibold text-blue-900 mb-2">{title}</h3>
+              <h3 className="font-semibold text-[#0A3D79] mb-2">{title}</h3>
               <p className="text-gray-600 text-sm">{desc}</p>
             </motion.div>
           ))}
@@ -175,8 +195,8 @@ export default function HomePage() {
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="py-20 bg-white text-center">
-        <h2 className="text-3xl font-bold text-blue-900 mb-12">
+      <section className="py-24 bg-white text-center">
+        <h2 className="text-3xl md:text-4xl font-bold text-[#0A3D79] mb-14">
           What Our Clients Say
         </h2>
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-6">
@@ -203,11 +223,11 @@ export default function HomePage() {
             <motion.div
               key={t.name}
               whileHover={{ scale: 1.03 }}
-              className="bg-gray-50 p-8 rounded-lg shadow hover:shadow-md transition text-left"
+              className="bg-gray-50 p-8 rounded-xl shadow-md hover:shadow-lg transition text-left"
             >
               <Quote size={28} className="text-[#0A3D79] mb-4" />
               <p className="text-gray-700 italic mb-4">“{t.quote}”</p>
-              <h4 className="font-semibold text-blue-900">{t.name}</h4>
+              <h4 className="font-semibold text-[#0A3D79]">{t.name}</h4>
               <p className="text-sm text-gray-600">{t.role}</p>
             </motion.div>
           ))}
@@ -215,21 +235,24 @@ export default function HomePage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-[#0A3D79] text-white py-20 text-center">
-        <h2 className="text-3xl font-bold mb-6">Ready to Build Your Brand?</h2>
-        <p className="max-w-2xl mx-auto text-white/90 mb-10">
-          From design to dispatch — The Garment Guy ensures excellence at every step.
+      <section className="bg-[#0A3D79] text-white py-24 text-center">
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          Ready to Build Your Brand?
+        </h2>
+        <p className="max-w-2xl mx-auto text-white/90 mb-10 leading-relaxed">
+          From design to dispatch — The Garment Guy ensures excellence at every
+          step.
         </p>
         <Link
           href="/register"
-          className="bg-white text-[#0A3D79] px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition"
+          className="bg-white text-[#0A3D79] px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
         >
           Get Started Today
         </Link>
       </section>
 
       {/* CONTACT */}
-      <section id="contact" className="bg-white py-20">
+      <section id="contact" className="bg-white py-24">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">Contact Us</h2>
           <form className="bg-[#F9FAFB] text-[#0A3D79] rounded-2xl p-8 shadow-lg space-y-5">
@@ -274,11 +297,11 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#0A3D79] text-white py-10">
+      <footer className="bg-[#0A3D79] text-white py-12">
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8 text-center md:text-left">
           <div>
             <h3 className="font-semibold text-lg mb-3">The Garment Guy</h3>
-            <p className="text-white/80 text-sm">
+            <p className="text-white/80 text-sm leading-relaxed">
               Premium Garment Manufacturing for Modern Brands.
             </p>
           </div>
@@ -304,7 +327,7 @@ export default function HomePage() {
           </div>
           <div>
             <h4 className="font-semibold mb-3">Contact</h4>
-            <p className="text-white/80 text-sm">
+            <p className="text-white/80 text-sm leading-relaxed">
               Daman, India <br />
               <Phone size={14} className="inline mx-1" />{" "}
               <a
