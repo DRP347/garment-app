@@ -1,5 +1,5 @@
 export function makeWhatsAppCheckoutLink({
-  phoneE164,      // e.g. "919876543210" without +, or "1xxxx"
+  phoneE164,      // e.g. "919876543210" without +
   items,
   totals,
   buyer,
@@ -16,16 +16,21 @@ export function makeWhatsAppCheckoutLink({
     "",
     "*Items:*",
     ...items.map(
-      (it) => `• ${it.name} x${it.qty} — ₹${(it.qty * it.price).toLocaleString("en-IN")}`
+      (it) =>
+        `• ${it.name} x${it.qty} — ₹${(it.qty * it.price).toLocaleString("en-IN")}`
     ),
     "",
     `Subtotal: ₹${totals.subtotal.toLocaleString("en-IN")}`,
-    totals.shipping != null ? `Shipping: ₹${totals.shipping.toLocaleString("en-IN")}` : undefined,
+    totals.shipping != null
+      ? `Shipping: ₹${totals.shipping.toLocaleString("en-IN")}`
+      : undefined,
     `Total: *₹${totals.grandTotal.toLocaleString("en-IN")}*`,
     "",
     "Please confirm availability and next steps.",
   ].filter(Boolean) as string[];
 
   const text = encodeURIComponent(lines.join("\n"));
-  return `https://wa.me/${phoneE164}?text=${text}`;
+  // ✅ Default to your business WhatsApp number
+  const finalNumber = phoneE164 || "917202809157";
+  return `https://wa.me/${finalNumber}?text=${text}`;
 }

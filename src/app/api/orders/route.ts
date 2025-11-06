@@ -15,7 +15,6 @@ export async function GET() {
       return NextResponse.json([], { status: 200 });
     }
 
-    // find user's ObjectId first
     const user = await UserModel.findOne({ email: session.user.email }).lean();
     if (!user?._id) {
       return NextResponse.json([], { status: 200 });
@@ -48,13 +47,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // find user and ObjectId
     const user = await UserModel.findOne({ email: session.user.email }).lean();
     if (!user?._id) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // ✅ create order using userId (required by your schema)
     const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
     await OrderModel.create({
       userId: new mongoose.Types.ObjectId(user._id),
@@ -64,7 +61,7 @@ export async function POST(req: Request) {
       createdAt: new Date(),
     });
 
-    // ✅ build WhatsApp message
+    // ✅ WhatsApp message
     const msg = `
 🧾 *New Garment Guy Order!*
 
@@ -82,7 +79,8 @@ Please confirm my order.
     `.trim();
 
     const encoded = encodeURIComponent(msg);
-    const whatsappURL = `https://wa.me/917861988279?text=${encoded}`;
+    // ✅ Updated WhatsApp number
+    const whatsappURL = `https://wa.me/917202809157?text=${encoded}`;
 
     return NextResponse.json(
       { success: true, whatsappURL, orderId },
