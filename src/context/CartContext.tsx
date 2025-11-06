@@ -29,26 +29,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load cart when user logs in
+  // Load from localStorage first
   useEffect(() => {
-    const loadCart = async () => {
+    const saved = localStorage.getItem("cart");
+    if (saved) setCart(JSON.parse(saved));
+  }, []);
+
+  // When session changes, sync DB cart
+  useEffect(() => {
+    const syncFromDB = async () => {
       if (!session?.user?.email) return;
       try {
-        setLoading(true);
         const res = await fetch("/api/cart", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to load cart");
-        const data = await res.json();
-        setCart(Array.isArray(data.items) ? data.items : []);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.items)) {
+            setCart(data.items);
+            localStorage.setItem("cart", JSON.stringify(data.items));
+          }
+        }
       } catch (err) {
-        console.error("❌ Cart load error:", err);
-      } finally {
-        setLoading(false);
+        console.error("❌ loadCart error:", err);
       }
     };
-    loadCart();
+    syncFromDB();
   }, [session?.user?.email]);
 
   const syncToDB = async (updatedCart: CartItem[]) => {
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(async () => {
       if (!session?.user?.email) return;
@@ -62,29 +70,22 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (err) {
         console.error("❌ Error syncing cart:", err);
       }
-    }, 500);
+    }, 600);
   };
 
   const addToCart = async (item: CartItem) => {
-    if (!session?.user?.email) {
-      toast.error("Please log in to add items");
-      return;
-    }
-    setCart((prev) => {
-      const existing = prev.find((p) => p.id === item.id);
-      const updated = existing
-        ? prev.map((p) =>
-            p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
-          )
-        : [...prev, { ...item, quantity: 1 }];
-      syncToDB(updated);
-      toast.success(existing ? "Quantity updated" : "Added to cart");
-      return updated;
-    });
+    const updated = [...cart];
+    const existing = updated.find((p) => p.id === item.id);
+    if (existing) existing.quantity += 1;
+    else updated.push({ ...item, quantity: 1 });
+
+    setCart(updated);
+    syncToDB(updated);
+    toast.success(existing ? "Quantity updated" : "Added to cart");
   };
 
   const removeFromCart = async (id: string) => {
-    const updated = cart.filter((item) => item.id !== id);
+    const updated = cart.filter((i) => i.id !== id);
     setCart(updated);
     syncToDB(updated);
     toast.success("Item removed");
@@ -92,14 +93,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = async () => {
     setCart([]);
+    localStorage.removeItem("cart");
     syncToDB([]);
     toast("Cart cleared");
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return;
-    const updated = cart.map((item) =>
-      item.id === id ? { ...item, quantity } : item
+    const updated = cart.map((i) =>
+      i.id === id ? { ...i, quantity } : i
     );
     setCart(updated);
     syncToDB(updated);
