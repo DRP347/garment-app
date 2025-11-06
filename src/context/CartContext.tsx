@@ -29,9 +29,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ Load from DB whenever user logs in
+  // Load persisted cart on login
   useEffect(() => {
-    const loadFromDB = async () => {
+    const load = async () => {
       if (status !== "authenticated" || !session?.user?.email) return;
       try {
         setLoading(true);
@@ -41,16 +41,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           setCart(data.items);
           localStorage.setItem("cart", JSON.stringify(data.items));
         }
-      } catch (err) {
-        console.error("❌ load cart error:", err);
+      } catch (e) {
+        console.error("❌ load cart error:", e);
       } finally {
         setLoading(false);
       }
     };
-    loadFromDB();
+    load();
   }, [status, session?.user?.email]);
 
-  // ✅ Clear local cart on logout
+  // Clear on logout
   useEffect(() => {
     if (status === "unauthenticated") {
       localStorage.removeItem("cart");
@@ -58,21 +58,49 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [status]);
 
-  const syncToDB = async (updatedCart: CartItem[]) => {
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
-    if (status !== "authenticated" || !session?.user?.email) return;
-    if (syncTimer.current) clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(async () => {
-      try {
-        await fetch("/api/cart", {
+  // Flush on unload (fast logout / tab close)
+  useEffect(() => {
+    const flush = () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+      if (status === "authenticated" && session?.user?.email) {
+        fetch("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: updatedCart }),
+          body: JSON.stringify({ items: cart }),
           credentials: "include",
-        });
-      } catch (err) {
-        console.error("❌ sync error:", err);
+          keepalive: true,
+        }).catch(() => {});
       }
+    };
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flush();
+    });
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      document.removeEventListener("visibilitychange", () => {});
+    };
+  }, [cart, status, session?.user?.email]);
+
+  const scheduleSync = (updated: CartItem[]) => {
+    localStorage.setItem("cart", JSON.stringify(updated));
+    if (status !== "authenticated" || !session?.user?.email) return;
+    // immediate fire
+    fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: updated }),
+      credentials: "include",
+    }).catch(() => {});
+    // debounce follow-up
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(() => {
+      fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: updated }),
+        credentials: "include",
+      }).catch(() => {});
     }, 500);
   };
 
@@ -82,43 +110,40 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     const updated = [...cart];
-    const existing = updated.find((p) => p.id === item.id);
-    if (existing) existing.quantity += 1;
+    const idx = updated.findIndex((p) => p.id === item.id || (p as any)._id === (item as any)._id);
+    if (idx >= 0) updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
     else updated.push({ ...item, quantity: 1 });
-
     setCart(updated);
-    syncToDB(updated);
-    toast.success(existing ? "Quantity updated" : "Added to cart");
+    scheduleSync(updated);
+    toast.success(idx >= 0 ? "Quantity updated" : "Added to cart");
   };
 
   const removeFromCart = async (id: string) => {
-    const updated = cart.filter((i) => i.id !== id);
+    const updated = cart.filter((i: any) => i.id !== id && i._id !== id);
     setCart(updated);
-    syncToDB(updated);
+    scheduleSync(updated);
     toast.success("Item removed");
   };
 
   const clearCart = async () => {
     setCart([]);
     localStorage.removeItem("cart");
-    syncToDB([]);
+    scheduleSync([]);
     toast("Cart cleared");
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return;
-    const updated = cart.map((i) =>
-      i.id === id ? { ...i, quantity } : i
+    const updated = cart.map((i: any) =>
+      i.id === id || i._id === id ? { ...i, quantity } : i
     );
     setCart(updated);
-    syncToDB(updated);
+    scheduleSync(updated);
     toast.success("Quantity updated");
   };
 
   return (
-    <CartContext.Provider
-      value={{ cart, loading, addToCart, removeFromCart, clearCart, updateQuantity }}
-    >
+    <CartContext.Provider value={{ cart, loading, addToCart, removeFromCart, clearCart, updateQuantity }}>
       {children}
     </CartContext.Provider>
   );
