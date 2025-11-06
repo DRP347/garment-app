@@ -29,37 +29,26 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load from localStorage first
+  // Load from localStorage if user logged in
   useEffect(() => {
-    const saved = localStorage.getItem("cart");
-    if (saved) setCart(JSON.parse(saved));
-  }, []);
-
-  // When session changes, sync DB cart
-  useEffect(() => {
-    const syncFromDB = async () => {
-      if (!session?.user?.email) return;
-      try {
-        const res = await fetch("/api/cart", { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.items)) {
-            setCart(data.items);
-            localStorage.setItem("cart", JSON.stringify(data.items));
-          }
-        }
-      } catch (err) {
-        console.error("❌ loadCart error:", err);
+    const loadLocal = () => {
+      const saved = localStorage.getItem("cart");
+      if (session?.user?.email && saved) {
+        setCart(JSON.parse(saved));
+      } else if (!session?.user?.email) {
+        // if user logged out, clear cart
+        localStorage.removeItem("cart");
+        setCart([]);
       }
     };
-    syncFromDB();
+    loadLocal();
   }, [session?.user?.email]);
 
   const syncToDB = async (updatedCart: CartItem[]) => {
+    if (!session?.user?.email) return;
     localStorage.setItem("cart", JSON.stringify(updatedCart));
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(async () => {
-      if (!session?.user?.email) return;
       try {
         await fetch("/api/cart", {
           method: "POST",
@@ -74,14 +63,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const addToCart = async (item: CartItem) => {
-    const updated = [...cart];
-    const existing = updated.find((p) => p.id === item.id);
-    if (existing) existing.quantity += 1;
-    else updated.push({ ...item, quantity: 1 });
-
-    setCart(updated);
-    syncToDB(updated);
-    toast.success(existing ? "Quantity updated" : "Added to cart");
+    if (!session?.user?.email) {
+      toast.error("Please log in to add items");
+      return;
+    }
+    setCart((prev) => {
+      const existing = prev.find((p) => p.id === item.id);
+      const updated = existing
+        ? prev.map((p) =>
+            p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
+          )
+        : [...prev, { ...item, quantity: 1 }];
+      syncToDB(updated);
+      toast.success(existing ? "Quantity updated" : "Added to cart");
+      return updated;
+    });
   };
 
   const removeFromCart = async (id: string) => {

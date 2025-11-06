@@ -9,13 +9,18 @@ import toast from "react-hot-toast";
 export default function CartPage() {
   const { cart, removeFromCart, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
+
   const total = cart.reduce(
     (sum: number, i: any) => sum + i.price * i.quantity,
     0
   );
 
   const handleCheckout = async () => {
-    if (cart.length === 0) return toast.error("Your cart is empty");
+    if (cart.length === 0) {
+      toast.error("Your cart is empty");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/orders", {
@@ -31,19 +36,22 @@ export default function CartPage() {
           address: "N/A",
         }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || "Order failed");
 
       if (data.whatsappURL) {
-        toast.success("Redirecting to WhatsApp...");
         clearCart();
+        window.open(data.whatsappURL, "_blank"); // open immediately
+        toast.success("Redirecting to WhatsApp...");
         setTimeout(() => {
-          window.open(data.whatsappURL, "_blank");
-          window.location.href = `/checkout-success?orderId=${data.orderId}`;
+          window.location.href = `/checkout-success?orderId=${data.orderId || "N/A"}`;
         }, 1500);
-      } else toast.error("No WhatsApp link found.");
-    } catch (e) {
-      toast.error("Checkout failed.");
+      } else {
+        toast.error("WhatsApp link not received");
+      }
+    } catch (err) {
+      toast.error("Checkout failed. Try again.");
     } finally {
       setLoading(false);
     }
@@ -67,12 +75,14 @@ export default function CartPage() {
       <h1 className="text-3xl font-bold text-[#0A3D79] mb-8 text-center">
         Your Cart
       </h1>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* Items */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {cart.map((item: any) => (
             <div
               key={item.id}
-              className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 bg-white border rounded-xl shadow-sm hover:shadow-lg transition"
+              className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 bg-white border rounded-xl shadow-sm hover:shadow-md transition"
             >
               <div className="relative w-full sm:w-32 h-64 sm:h-32 rounded-lg overflow-hidden bg-gray-50">
                 <Image
@@ -82,6 +92,7 @@ export default function CartPage() {
                   className="object-cover"
                 />
               </div>
+
               <div className="flex flex-col flex-grow text-center sm:text-left">
                 <h2 className="font-semibold text-[#0A3D79] text-lg">
                   {item.name}
@@ -103,6 +114,7 @@ export default function CartPage() {
           ))}
         </div>
 
+        {/* Summary */}
         <div className="bg-white border rounded-xl shadow-lg p-6 h-fit">
           <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">
             Order Summary
@@ -120,17 +132,45 @@ export default function CartPage() {
             <span>Total</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
+
           <button
             disabled={loading}
             onClick={handleCheckout}
-            className={`w-full py-3 rounded-lg font-semibold transition ${
+            className={`w-full py-3 rounded-lg font-semibold text-white transition-all ${
               loading
-                ? "bg-[#0A3D79]/70"
-                : "bg-[#0A3D79] hover:bg-[#124E9C] hover:shadow-md text-white"
+                ? "bg-[#0A3D79]/70 cursor-not-allowed"
+                : "bg-[#0A3D79] hover:bg-[#124E9C] hover:shadow-md"
             }`}
           >
-            {loading ? "Processing..." : "Proceed to Checkout"}
+            {loading ? (
+              <span className="flex justify-center items-center gap-2">
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  ></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              "Proceed to Checkout"
+            )}
           </button>
+
           <button
             onClick={clearCart}
             className="w-full mt-3 border border-[#0A3D79] text-[#0A3D79] hover:bg-[#0A3D79] hover:text-white font-semibold py-3 rounded-lg transition"
