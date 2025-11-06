@@ -3,10 +3,6 @@ import { getServerSession } from "next-auth";
 import authConfig from "@/auth.config";
 import clientPromise from "@/lib/mongodb";
 
-/**
- * CART API — fixed for null userId errors.
- */
-
 export async function GET() {
   try {
     const session = await getServerSession(authConfig);
@@ -39,10 +35,8 @@ export async function POST(req: Request) {
     const db = client.db("TheGarmentGuyDB");
     const carts = db.collection("carts");
 
-    // Ensure unique index only on userEmail
     await carts.createIndex({ userEmail: 1 }, { unique: true });
 
-    // Upsert safely
     await carts.updateOne(
       { userEmail: session.user.email },
       { $set: { items, updatedAt: new Date() } },

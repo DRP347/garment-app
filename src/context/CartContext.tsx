@@ -29,7 +29,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load user's cart
+  // Load cart when user logs in
   useEffect(() => {
     const loadCart = async () => {
       if (!session?.user?.email) return;
@@ -46,27 +46,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     loadCart();
-  }, [session]);
+  }, [session?.user?.email]);
 
-  // Debounced cart sync
   const syncToDB = async (updatedCart: CartItem[]) => {
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(async () => {
-      const email = session?.user?.email;
-      if (!email) return;
-
+      if (!session?.user?.email) return;
       try {
-        const res = await fetch("/api/cart", {
+        await fetch("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: updatedCart }),
           credentials: "include",
         });
-        if (!res.ok) console.warn("Cart sync failed:", await res.text());
       } catch (err) {
         console.error("❌ Error syncing cart:", err);
       }
-    }, 700);
+    }, 500);
   };
 
   const addToCart = async (item: CartItem) => {
@@ -81,10 +77,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             p.id === item.id ? { ...p, quantity: p.quantity + 1 } : p
           )
         : [...prev, { ...item, quantity: 1 }];
-      queueMicrotask(() =>
-        toast.success(existing ? "Quantity updated" : "Added to cart")
-      );
-      queueMicrotask(() => syncToDB(updated));
+      syncToDB(updated);
+      toast.success(existing ? "Quantity updated" : "Added to cart");
       return updated;
     });
   };
@@ -92,14 +86,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const removeFromCart = async (id: string) => {
     const updated = cart.filter((item) => item.id !== id);
     setCart(updated);
-    queueMicrotask(() => syncToDB(updated));
-    queueMicrotask(() => toast.success("Item removed"));
+    syncToDB(updated);
+    toast.success("Item removed");
   };
 
   const clearCart = async () => {
     setCart([]);
-    queueMicrotask(() => syncToDB([]));
-    queueMicrotask(() => toast("Cart cleared"));
+    syncToDB([]);
+    toast("Cart cleared");
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
@@ -108,8 +102,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       item.id === id ? { ...item, quantity } : item
     );
     setCart(updated);
-    queueMicrotask(() => syncToDB(updated));
-    queueMicrotask(() => toast.success("Quantity updated"));
+    syncToDB(updated);
+    toast.success("Quantity updated");
   };
 
   return (

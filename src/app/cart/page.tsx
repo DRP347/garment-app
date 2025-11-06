@@ -15,7 +15,6 @@ export default function CartPage() {
     0
   );
 
-  // ✅ Integrated Checkout (keeps same animation)
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Your cart is empty");
@@ -23,9 +22,7 @@ export default function CartPage() {
     }
 
     setLoading(true);
-
     try {
-      // Send order to backend for WhatsApp message creation
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,21 +40,21 @@ export default function CartPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create order");
 
-      // ✅ Open WhatsApp using server-generated URL
+      // ✅ Instant WhatsApp redirect
       if (data.whatsappURL) {
+        clearCart();
+        window.open(data.whatsappURL, "_blank"); // open WhatsApp
+        toast.success("Redirecting to WhatsApp...");
         setTimeout(() => {
-          clearCart();
-          window.open(data.whatsappURL, "_blank");
           window.location.href = `/checkout-success?orderId=${data.orderId || "N/A"}`;
-          setLoading(false);
-        }, 1800);
+        }, 2000);
       } else {
         toast.error("WhatsApp link not received");
-        setLoading(false);
       }
-    } catch (error: any) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       toast.error("Server error. Try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -82,18 +79,17 @@ export default function CartPage() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* 🧾 Cart Items Section */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           {cart.map((item: any) => (
             <div
-              key={item._id}
+              key={item.id}
               className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 bg-white border rounded-xl shadow-sm hover:shadow-md transition"
             >
               <div className="relative w-full sm:w-32 h-64 sm:h-32 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0">
                 <Image
                   fill
                   sizes="(max-width: 768px) 100vw, 200px"
-                  src={item.images?.[0] || "/placeholder.jpg"}
+                  src={item.image || item.images?.[0] || "/placeholder.jpg"}
                   alt={item.name}
                   className="object-cover"
                   priority
@@ -104,21 +100,18 @@ export default function CartPage() {
                 <h2 className="font-semibold text-[#0A3D79] text-lg">
                   {item.name}
                 </h2>
-                <p className="text-gray-500 text-sm">{item.description}</p>
-
                 <div className="flex justify-center sm:justify-start items-center gap-4 mt-3">
                   <p className="text-[#0A3D79] font-semibold">
                     ₹{item.price.toFixed(2)}
                   </p>
                   <p className="text-gray-600 text-sm">× {item.quantity}</p>
                 </div>
-
                 <p className="text-sm text-gray-500 mt-1">
                   Subtotal: ₹{(item.price * item.quantity).toFixed(2)}
                 </p>
 
                 <button
-                  onClick={() => removeFromCart(item._id)}
+                  onClick={() => removeFromCart(item.id)}
                   className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition"
                 >
                   Remove
@@ -128,69 +121,37 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* 💳 Order Summary */}
+        {/* Order Summary */}
         <div className="bg-white border rounded-xl shadow-md p-6 h-fit">
           <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">
             Order Summary
           </h2>
-
           <div className="flex justify-between text-gray-700 mb-3">
             <span>Subtotal</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
-
           <div className="flex justify-between text-gray-700 mb-3">
             <span>Shipping</span>
             <span className="text-green-600 font-medium">Free</span>
           </div>
-
           <hr className="my-4" />
-
           <div className="flex justify-between font-semibold text-lg text-[#0A3D79] mb-6">
             <span>Total</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
 
-          {/* ✅ Checkout Button with Animation (unchanged) */}
           <button
             disabled={loading}
             onClick={handleCheckout}
-            className={`relative w-full overflow-hidden bg-[#0A3D79] text-white font-semibold py-3 rounded-lg transition-all duration-300 ${
+            className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
               loading
-                ? "cursor-not-allowed opacity-80"
-                : "hover:bg-[#124E9C] hover:shadow-lg"
+                ? "bg-[#0A3D79]/70 cursor-not-allowed"
+                : "bg-[#0A3D79] hover:bg-[#124E9C] hover:shadow-lg text-white"
             }`}
           >
-            {loading ? (
-              <span className="flex justify-center items-center gap-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  ></path>
-                </svg>
-                Processing...
-              </span>
-            ) : (
-              "Proceed to Checkout"
-            )}
+            {loading ? "Processing..." : "Proceed to Checkout"}
           </button>
 
-          {/* 🗑 Clear Cart */}
           <button
             onClick={clearCart}
             className="w-full mt-3 border border-[#0A3D79] text-[#0A3D79] hover:bg-[#0A3D79] hover:text-white font-semibold py-3 rounded-lg transition"
