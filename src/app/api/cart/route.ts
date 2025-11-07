@@ -2,10 +2,21 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import authConfig from "@/auth.config";
 import connectDB from "@/lib/db";
-import mongoose from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 
-// ✅ Define Cart Schema (only if not already in models)
-const CartSchema = new mongoose.Schema(
+interface ICart extends Document {
+  userEmail: string;
+  items: {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+    image?: string;
+  }[];
+  updatedAt: Date;
+}
+
+const CartSchema = new Schema<ICart>(
   {
     userEmail: { type: String, required: true, unique: true },
     items: [
@@ -23,10 +34,10 @@ const CartSchema = new mongoose.Schema(
 );
 
 const CartModel =
-  mongoose.models.Cart || mongoose.model("Cart", CartSchema);
+  mongoose.models.Cart || mongoose.model<ICart>("Cart", CartSchema);
 
 /* -------------------------------------------------------------------------- */
-/*                                 🧾 GET CART                                 */
+/*                                   GET CART                                 */
 /* -------------------------------------------------------------------------- */
 export async function GET() {
   try {
@@ -35,11 +46,8 @@ export async function GET() {
     if (!session?.user?.email)
       return NextResponse.json({ items: [] }, { status: 200 });
 
-    const cart = await CartModel.findOne({
-      userEmail: session.user.email,
-    }).lean();
-
-    return NextResponse.json({ items: cart?.items || [] }, { status: 200 });
+    const cart = await CartModel.findOne({ userEmail: session.user.email }).lean<ICart | null>();
+    return NextResponse.json({ items: cart?.items ?? [] }, { status: 200 });
   } catch (err: any) {
     console.error("❌ CART GET error:", err.message);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -47,32 +55,24 @@ export async function GET() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 🧩 SAVE CART                                */
+/*                                   SAVE CART                                */
 /* -------------------------------------------------------------------------- */
 export async function POST(req: Request) {
   try {
     await connectDB();
     const session = await getServerSession(authConfig);
-
-    // 🧠 If user not logged in, skip DB — handled in localStorage
     if (!session?.user?.email)
-      return NextResponse.json(
-        { error: "Not logged in, using local cart only" },
-        { status: 200 }
-      );
+      return NextResponse.json({ error: "Not logged in" }, { status: 200 });
 
     const { items } = await req.json();
     if (!Array.isArray(items))
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
-    const userEmail = session.user.email;
-
-    // ✅ Upsert user's cart
     const result = await CartModel.findOneAndUpdate(
-      { userEmail },
+      { userEmail: session.user.email },
       { items, updatedAt: new Date() },
       { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    ).lean<ICart>();
 
     return NextResponse.json({ success: true, items: result.items }, { status: 200 });
   } catch (err: any) {
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 🗑 CLEAR CART                               */
+/*                                   CLEAR CART                               */
 /* -------------------------------------------------------------------------- */
 export async function DELETE() {
   try {
