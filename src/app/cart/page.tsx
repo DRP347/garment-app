@@ -10,16 +10,13 @@ export default function CartPage() {
   const { cart, removeFromCart, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
 
-  const total = cart.reduce(
-    (sum: number, i: any) => sum + i.price * i.quantity,
-    0
-  );
+  const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const handleCheckout = async () => {
-    if (cart.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
+    if (!cart.length) return toast.error("Your cart is empty");
+
+    // ✅ Open WhatsApp tab immediately before await
+    const waTab = window.open("about:blank", "_blank");
 
     setLoading(true);
     try {
@@ -27,31 +24,25 @@ export default function CartPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: cart.map((i: any) => ({
+          items: cart.map((i) => ({
             name: i.name,
             quantity: i.quantity,
             price: i.price,
           })),
           totalAmount: total,
-          address: "N/A",
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Order failed");
+      if (!res.ok || !data.whatsappURL) throw new Error();
 
-      if (data.whatsappURL) {
-        clearCart();
-        window.open(data.whatsappURL, "_blank"); // open immediately
-        toast.success("Redirecting to WhatsApp...");
-        setTimeout(() => {
-          window.location.href = `/checkout-success?orderId=${data.orderId || "N/A"}`;
-        }, 1500);
-      } else {
-        toast.error("WhatsApp link not received");
-      }
-    } catch (err) {
-      toast.error("Checkout failed. Try again.");
+      // ✅ Direct tab redirect
+      waTab!.location.href = data.whatsappURL;
+      clearCart();
+      toast.success("Redirecting to WhatsApp...");
+    } catch {
+      waTab?.close();
+      toast.error("Checkout failed");
     } finally {
       setLoading(false);
     }
@@ -77,11 +68,11 @@ export default function CartPage() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Items */}
+        {/* Left: Items */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {cart.map((item: any) => (
+          {cart.map((item) => (
             <div
-              key={item.id}
+              key={item._id || item.id}
               className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 bg-white border rounded-xl shadow-sm hover:shadow-md transition"
             >
               <div className="relative w-full sm:w-32 h-64 sm:h-32 rounded-lg overflow-hidden bg-gray-50">
@@ -97,14 +88,14 @@ export default function CartPage() {
                 <h2 className="font-semibold text-[#0A3D79] text-lg">
                   {item.name}
                 </h2>
-                <p className="text-gray-600 mt-1 text-sm">
-                  ₹{item.price.toFixed(2)} × {item.quantity}
+                <p className="text-gray-600 text-sm">
+                  ₹{item.price} × {item.quantity}
                 </p>
                 <p className="text-gray-500 text-sm mt-1">
                   Subtotal: ₹{(item.price * item.quantity).toFixed(2)}
                 </p>
                 <button
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item._id || item.id)}
                   className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition"
                 >
                   Remove
@@ -114,20 +105,24 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Summary */}
-        <div className="bg-white border rounded-xl shadow-lg p-6 h-fit">
+        {/* Right: Summary */}
+        <div className="bg-white border rounded-xl shadow-md p-6 h-fit">
           <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">
             Order Summary
           </h2>
+
           <div className="flex justify-between text-gray-700 mb-3">
             <span>Subtotal</span>
             <span>₹{total.toFixed(2)}</span>
           </div>
+
           <div className="flex justify-between text-gray-700 mb-3">
             <span>Shipping</span>
             <span className="text-green-600 font-medium">Free</span>
           </div>
+
           <hr className="my-4" />
+
           <div className="flex justify-between font-semibold text-lg text-[#0A3D79] mb-6">
             <span>Total</span>
             <span>₹{total.toFixed(2)}</span>

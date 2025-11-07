@@ -5,7 +5,8 @@ import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
 interface CartItem {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   price: number;
   image?: string;
@@ -29,78 +30,56 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load persisted cart on login
+  // ✅ Load cart only when logged in and session is ready
   useEffect(() => {
-    const load = async () => {
+    const loadCart = async () => {
       if (status !== "authenticated" || !session?.user?.email) return;
       try {
         setLoading(true);
         const res = await fetch("/api/cart", { credentials: "include" });
         const data = await res.json();
-        if (Array.isArray(data.items)) {
+        if (Array.isArray(data.items) && data.items.length) {
           setCart(data.items);
           localStorage.setItem("cart", JSON.stringify(data.items));
+        } else {
+          // fallback to localStorage if db empty
+          const local = localStorage.getItem("cart");
+          if (local) setCart(JSON.parse(local));
         }
       } catch (e) {
-        console.error("❌ load cart error:", e);
+        console.error("load cart error:", e);
       } finally {
         setLoading(false);
       }
     };
-    load();
+    loadCart();
   }, [status, session?.user?.email]);
 
-  // Clear on logout
+  // ✅ Clear cart on logout
   useEffect(() => {
     if (status === "unauthenticated") {
-      localStorage.removeItem("cart");
       setCart([]);
+      localStorage.removeItem("cart");
     }
   }, [status]);
 
-  // Flush on unload (fast logout / tab close)
-  useEffect(() => {
-    const flush = () => {
-      if (syncTimer.current) clearTimeout(syncTimer.current);
-      if (status === "authenticated" && session?.user?.email) {
-        fetch("/api/cart", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: cart }),
-          credentials: "include",
-          keepalive: true,
-        }).catch(() => {});
-      }
-    };
-    window.addEventListener("beforeunload", flush);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") flush();
-    });
-    return () => {
-      window.removeEventListener("beforeunload", flush);
-      document.removeEventListener("visibilitychange", () => {});
-    };
-  }, [cart, status, session?.user?.email]);
-
-  const scheduleSync = (updated: CartItem[]) => {
+  // ✅ Sync to DB (with debounce)
+  const syncToDB = async (updated: CartItem[]) => {
     localStorage.setItem("cart", JSON.stringify(updated));
     if (status !== "authenticated" || !session?.user?.email) return;
-    // immediate fire
-    fetch("/api/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: updated }),
-      credentials: "include",
-    }).catch(() => {});
-    // debounce follow-up
+
     if (syncTimer.current) clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(() => {
-      fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: updated }),
-        credentials: "include",
-      }).catch(() => {});
+    syncTimer.current = setTimeout(async () => {
+      try {
+        await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: updated }),
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("sync error:", err);
+      }
     }, 500);
   };
 
@@ -109,41 +88,42 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       toast.error("Please log in to add items");
       return;
     }
+    const id = item._id || item.id;
     const updated = [...cart];
-    const idx = updated.findIndex((p) => p.id === item.id || (p as any)._id === (item as any)._id);
-    if (idx >= 0) updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + 1 };
+    const existing = updated.find((p) => p._id === id || p.id === id);
+    if (existing) existing.quantity += 1;
     else updated.push({ ...item, quantity: 1 });
     setCart(updated);
-    scheduleSync(updated);
-    toast.success(idx >= 0 ? "Quantity updated" : "Added to cart");
+    syncToDB(updated);
+    toast.success(existing ? "Quantity updated" : "Added to cart");
   };
 
   const removeFromCart = async (id: string) => {
-    const updated = cart.filter((i: any) => i.id !== id && i._id !== id);
+    const updated = cart.filter((i) => i._id !== id && i.id !== id);
     setCart(updated);
-    scheduleSync(updated);
+    syncToDB(updated);
     toast.success("Item removed");
   };
 
   const clearCart = async () => {
     setCart([]);
     localStorage.removeItem("cart");
-    scheduleSync([]);
-    toast("Cart cleared");
+    syncToDB([]);
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
     if (quantity < 1) return;
-    const updated = cart.map((i: any) =>
-      i.id === id || i._id === id ? { ...i, quantity } : i
+    const updated = cart.map((i) =>
+      i._id === id || i.id === id ? { ...i, quantity } : i
     );
     setCart(updated);
-    scheduleSync(updated);
-    toast.success("Quantity updated");
+    syncToDB(updated);
   };
 
   return (
-    <CartContext.Provider value={{ cart, loading, addToCart, removeFromCart, clearCart, updateQuantity }}>
+    <CartContext.Provider
+      value={{ cart, loading, addToCart, removeFromCart, clearCart, updateQuantity }}
+    >
       {children}
     </CartContext.Provider>
   );
