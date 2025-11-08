@@ -212,7 +212,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
+    {/*  {/* CTA *
       <section className="bg-[#0A3D79] text-white py-24 text-center">
         <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Ready to Build Your Brand?
@@ -228,7 +228,7 @@ export default function HomePage() {
           Get Started Today
         </Link>
       </section>
-
+*/}
       {/* CONTACT */}
       <section id="contact" className="bg-white py-24">
         <div className="max-w-4xl mx-auto px-6 text-center">

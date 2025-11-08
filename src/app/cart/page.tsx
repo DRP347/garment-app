@@ -13,11 +13,11 @@ export default function CartPage() {
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const handleCheckout = async () => {
-    if (!cart.length) return toast.error("Your cart is empty");
-
-    // ✅ Open WhatsApp tab immediately before await
-    const waTab = window.open("about:blank", "_blank");
-
+    if (!cart.length) {
+      toast.error("Your cart is empty");
+      return;
+    }
+    const waTab = window.open("about:blank", "_blank"); // open first
     setLoading(true);
     try {
       const res = await fetch("/api/orders", {
@@ -32,15 +32,12 @@ export default function CartPage() {
           totalAmount: total,
         }),
       });
-
       const data = await res.json();
-      if (!res.ok || !data.whatsappURL) throw new Error();
-
-      // ✅ Direct tab redirect
+      if (!res.ok || !data.whatsappURL) throw new Error("No WA link");
       waTab!.location.href = data.whatsappURL;
       clearCart();
-      toast.success("Redirecting to WhatsApp...");
-    } catch {
+      toast.success("Redirecting to WhatsApp…");
+    } catch (e) {
       waTab?.close();
       toast.error("Checkout failed");
     } finally {
@@ -68,17 +65,16 @@ export default function CartPage() {
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left: Items */}
         <div className="lg:col-span-2 flex flex-col gap-6">
-          {cart.map((item) => (
+          {cart.map((item, idx) => (
             <div
-              key={item._id || item.id}
+              key={(item._id ?? item.id ?? String(idx))}
               className="flex flex-col sm:flex-row items-center sm:items-start gap-5 p-5 bg-white border rounded-xl shadow-sm hover:shadow-md transition"
             >
               <div className="relative w-full sm:w-32 h-64 sm:h-32 rounded-lg overflow-hidden bg-gray-50">
                 <Image
                   fill
-                  src={item.image || item.images?.[0] || "/placeholder.jpg"}
+                  src={item.image || "/placeholder.jpg"}
                   alt={item.name}
                   className="object-cover"
                 />
@@ -94,8 +90,16 @@ export default function CartPage() {
                 <p className="text-gray-500 text-sm mt-1">
                   Subtotal: ₹{(item.price * item.quantity).toFixed(2)}
                 </p>
+
                 <button
-                  onClick={() => removeFromCart(item._id || item.id)}
+                  onClick={() => {
+                    const rid = item._id ?? item.id;
+                    if (!rid) {
+                      toast.error("Invalid item id");
+                      return;
+                    }
+                    void removeFromCart(rid);
+                  }}
                   className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition"
                 >
                   Remove
@@ -105,7 +109,6 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Right: Summary */}
         <div className="bg-white border rounded-xl shadow-md p-6 h-fit">
           <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">
             Order Summary
@@ -152,14 +155,14 @@ export default function CartPage() {
                     r="10"
                     stroke="currentColor"
                     strokeWidth="4"
-                  ></circle>
+                  />
                   <path
                     className="opacity-75"
                     fill="currentColor"
                     d="M4 12a8 8 0 018-8v8H4z"
-                  ></path>
+                  />
                 </svg>
-                Processing...
+                Processing…
               </span>
             ) : (
               "Proceed to Checkout"
@@ -167,7 +170,7 @@ export default function CartPage() {
           </button>
 
           <button
-            onClick={clearCart}
+            onClick={() => void clearCart()}
             className="w-full mt-3 border border-[#0A3D79] text-[#0A3D79] hover:bg-[#0A3D79] hover:text-white font-semibold py-3 rounded-lg transition"
           >
             Clear Cart

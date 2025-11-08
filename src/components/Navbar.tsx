@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCart } from "@/context/CartContext";
 import { useSession, signOut } from "next-auth/react";
 import { ShoppingCart, LogOut, Menu, X } from "lucide-react";
@@ -15,17 +15,26 @@ export default function Navbar() {
 
   const logout = () => signOut({ callbackUrl: "/login" });
 
+  const navLinks = useMemo(
+    () => [
+      { href: "/", label: "Home" },
+      { href: "/about", label: "About" },
+      { href: "/products", label: "Products" },
+      ...(session ? [{ href: "/orders", label: "Orders" }] : []),
+    ],
+    [session]
+  );
+
   return (
     <nav className="w-full bg-white fixed top-0 left-0 z-50 shadow-sm backdrop-blur-lg">
       <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-        {/* 🔵 Logo Pill */}
         <Link
           href="/"
           className="flex items-center gap-2 bg-[#0A3D79] hover:bg-[#124E9C] text-white px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 shadow-sm"
         >
           <Image
             src="/image/Logo-Icon.webp"
-            alt="The Garment Guy Logo"
+            alt="The Garment Guy"
             width={28}
             height={28}
             priority
@@ -36,29 +45,18 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* 🌐 Desktop Nav */}
         <div className="hidden md:flex items-center gap-6">
-          <Link
-            href="/"
-            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
-          >
-            Home
-          </Link>
-          <Link
-            href="/about"
-            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
-          >
-            About
-          </Link>
-          <Link
-            href="/products"
-            className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
-          >
-            Products
-          </Link>
+          {navLinks.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
+            >
+              {l.label}
+            </Link>
+          ))}
 
-          {/* 🛒 Cart */}
-          <Link href="/cart" className="relative text-[#0A3D79]">
+          <Link href="/cart" className="relative text-[#0A3D79]" aria-label="Cart">
             <ShoppingCart className="w-5 h-5" />
             {Array.isArray(cart) && cart.length > 0 && (
               <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
@@ -67,7 +65,6 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* 🔐 Auth */}
           {session ? (
             <button
               onClick={logout}
@@ -85,16 +82,15 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* 📱 Mobile Menu Toggle */}
         <button
           onClick={() => setOpen(!open)}
           className="md:hidden text-[#0A3D79] focus:outline-none"
+          aria-label="Toggle menu"
         >
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
-      {/* 📱 Mobile Dropdown */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -106,14 +102,14 @@ export default function Navbar() {
             className="md:hidden bg-white border-t border-gray-100 shadow-sm"
           >
             <div className="px-6 py-4 space-y-3">
-              {["Home", "About", "Products"].map((label) => (
+              {navLinks.map((l) => (
                 <Link
-                  key={label}
-                  href={`/${label === "Home" ? "" : label.toLowerCase()}`}
+                  key={l.href}
+                  href={l.href}
                   onClick={() => setOpen(false)}
                   className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
                 >
-                  {label}
+                  {l.label}
                 </Link>
               ))}
 
@@ -122,6 +118,7 @@ export default function Navbar() {
                   href="/cart"
                   onClick={() => setOpen(false)}
                   className="relative text-[#0A3D79]"
+                  aria-label="Cart"
                 >
                   <ShoppingCart className="w-5 h-5" />
                   {Array.isArray(cart) && cart.length > 0 && (

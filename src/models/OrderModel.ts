@@ -1,20 +1,28 @@
-import mongoose, { Model, Document, Schema } from 'mongoose';
+import mongoose, { Schema, model, models } from "mongoose";
 
-export interface IOrder extends Document {
-    userId: Schema.Types.ObjectId;
-    items: any[];
-    total: number;
-    status: string;
-    createdAt: string; // <-- ADD THIS
-    updatedAt: string; // <-- ADD THIS
-}
+if (!mongoose.models) mongoose.models = {};
 
-const OrderSchema = new mongoose.Schema<IOrder>({
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    items: [Schema.Types.Mixed],
+const OrderSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    orderId: { type: String, required: true },
+    items: [
+      {
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number },
+        size: { type: Number },
+      },
+    ],
     total: { type: Number, required: true },
-    status: { type: String, default: 'Pending' },
-}, { timestamps: true });
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending",
+    },
+  },
+  { timestamps: true }
+);
 
-const OrderModel: Model<IOrder> = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
-export default OrderModel;
+// ✅ Prevent overwriting model on hot-reload (the key issue)
+export default models?.Order || model("Order", OrderSchema);

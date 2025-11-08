@@ -6,83 +6,103 @@ import OrderModel from "@/models/OrderModel";
 import UserModel from "@/models/UserModel";
 import mongoose from "mongoose";
 
-const WA_PHONE = "917202809157"; // 91 + 10-digit
+const WA_PHONE = "917202809157"; // without "+" or spaces
+const MIN_QTY = 20;
+
+export async function GET() {
+  try {
+    await connectDB();
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) return NextResponse.json([], { status: 200 });
+
+    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    if (!user?._id) return NextResponse.json([], { status: 200 });
+
+    const orders = await OrderModel.find({ userId: user._id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json(orders, { status: 200 });
+  } catch (e) {
+    console.error("GET /orders error:", e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {
     await connectDB();
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const { items, totalAmount } = await req.json();
-    if (!Array.isArray(items) || !items.length || !totalAmount) {
+    const body = await req.json();
+    const rawItems: Array<{ name: string; quantity: number; price?: number; size?: number }> =
+      Array.isArray(body.items) ? body.items : [];
+    const totalAmount = Number(body.totalAmount || 0);
+
+    if (!rawItems.length || !totalAmount)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-    }
 
-    // Pull from BOTH places, then merge
-    const db = mongoose.connection.useDb("TheGarmentGuyDB");
-    const nextAuthUser: any =
-      (await db.collection("users").findOne({ email: session.user.email })) || {};
-    const customUser = await UserModel.findOne({ email: session.user.email }).lean();
-
-    // merged user view
-    const u = {
-      name: customUser?.name ?? nextAuthUser?.name ?? "N/A",
-      phone:
-        customUser?.phone ??
-        nextAuthUser?.phone ??
-        nextAuthUser?.mobile ??
-        nextAuthUser?.contact ??
-        "Not Provided",
-      businessName:
-        customUser?.businessName ??
-        customUser?.shopName ??
-        nextAuthUser?.businessName ??
-        "Not Provided",
-      businessType:
-        customUser?.businessType ??
-        customUser?.accountType ??
-        nextAuthUser?.businessType ??
-        "Not Provided",
-      _id: customUser?._id ?? nextAuthUser?._id,
-    };
-
-    if (!u._id) {
+    const user = await UserModel.findOne({ email: session.user.email }).lean();
+    if (!user?._id)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+
+    const items = rawItems.map((i) => ({
+      name: i.name,
+      quantity: Math.max(MIN_QTY, Number(i.quantity || 0)),
+      price: i.price,
+      size: i.size,
+    }));
 
     const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
 
     await OrderModel.create({
-      userId: new mongoose.Types.ObjectId(u._id),
+      userId: new mongoose.Types.ObjectId(String(user._id)),
+      orderId,
       items,
       total: totalAmount,
       status: "Pending",
       createdAt: new Date(),
     });
 
-    const msg = `
-🧾 *New Garment Guy Order!*
+    // WhatsApp message
+    const lines = [
+      "🧾 *New Garment Guy Order!*",
+      "",
+      `*Order ID:* ${orderId}`,
+      `*Name:* ${user.name || "N/A"}`,
+      `*Phone:* ${user.phone || "N/A"}`,
+      `*Business:* ${user.businessName || user.shopName || "N/A"}`,
+      `*Type:* ${user.businessType || user.accountType || "N/A"}`,
+      "",
+      "*Items:*",
+      ...items.map(
+        (i) =>
+          `• ${i.name}${i.size ? ` (Size ${i.size})` : ""} × ${i.quantity}${
+            i.price ? ` — ₹${i.price}` : ""
+          }`
+      ),
+      "",
+      `*Total:* ₹${totalAmount.toLocaleString("en-IN")}`,
+      `🕒 *Status:* Pending`,
+      "",
+      "Thank you for ordering with The Garment Guy.",
+    ];
 
-*Order ID:* ${orderId}
-*Name:* ${u.name}
-*Phone:* ${u.phone}
-*Business:* ${u.businessName}
-*Type:* ${u.businessType}
-*Total:* ₹${totalAmount}
+    const whatsappURL = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(
+      lines.join("\n")
+    )}`;
 
-*Items:*
-${items.map((i: any) => `• ${i.name} x${i.quantity}`).join("\n")}
-
-Please confirm my order.`.trim();
-
-    const whatsappURL = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(msg)}`;
-
-    return NextResponse.json({ success: true, whatsappURL, orderId }, { status: 201 });
-  } catch (err: any) {
-    console.error("❌ Order POST error:", err?.message || err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { success: true, whatsappURL, orderId },
+      { status: 201 }
+    );
+  } catch (e) {
+    console.error("POST /orders error:", e);
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Server error" },
+      { status: 500 }
+    );
   }
 }

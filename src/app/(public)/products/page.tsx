@@ -4,27 +4,35 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
+type Product = {
+  _id: string;
+  name: string;
+  price: number;
+  images?: string[];
+  category?: string;
+};
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const run = async () => {
       try {
         const res = await fetch("/api/products");
         const data = await res.json();
-        setProducts(data);
-      } catch (err) {
-        console.error("Failed to load products:", err);
+        setProducts(Array.isArray(data) ? data : []);
+      } catch {
+        setProducts([]);
       }
     };
-    fetchProducts();
+    run();
   }, []);
 
   const filtered =
     selectedCategory === "All"
       ? products
-      : products.filter((p: any) => p.category === selectedCategory);
+      : products.filter((p) => p.category === selectedCategory);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -32,7 +40,6 @@ export default function ProductsPage() {
         Our Collection
       </h1>
 
-      {/* Filter buttons */}
       <div className="flex justify-center gap-4 mb-10 flex-wrap">
         {["All", "Denim", "Cargo"].map((cat) => (
           <button
@@ -49,32 +56,27 @@ export default function ProductsPage() {
         ))}
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filtered.map((product: any) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+        {filtered.map((p) => (
           <Link
-            key={product._id}
-            href={`/products/${product._id}`}
+            key={p._id}
+            href={`/products/${p._id}`}
             className="group bg-white border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all"
           >
             <div className="relative w-full aspect-[3/4] overflow-hidden">
               <Image
-                src={product.images?.[0] || "/placeholder.jpg"}
-                alt={product.name}
+                src={p.images?.[0] || "/placeholder.jpg"}
+                alt={p.name}
                 fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
               />
             </div>
             <div className="p-3 sm:p-4">
-              <h2 className="font-semibold text-[#0A3D79] text-sm sm:text-lg">
-                {product.name}
+              <h2 className="font-semibold text-[#0A3D79] text-base truncate">
+                {p.name}
               </h2>
-              <p className="text-gray-500 text-xs sm:text-sm truncate mt-1">
-                {product.description}
-              </p>
-              <p className="text-[#0A3D79] font-bold text-sm sm:text-base mt-2">
-                ₹{product.price.toFixed(2)}
+              <p className="text-[#0A3D79] font-bold text-sm mt-2">
+                ₹{p.price?.toFixed?.(2) ?? p.price}
               </p>
             </div>
           </Link>
