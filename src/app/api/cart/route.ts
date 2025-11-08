@@ -2,21 +2,17 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import authConfig from "@/auth.config";
 import connectDB from "@/lib/db";
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose from "mongoose";
 
-interface ICart extends Document {
-  userEmail: string;
-  items: {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
-    image?: string;
-  }[];
-  updatedAt: Date;
-}
+type CartItem = {
+  id?: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image?: string;
+};
 
-const CartSchema = new Schema<ICart>(
+const CartSchema = new mongoose.Schema(
   {
     userEmail: { type: String, required: true, unique: true },
     items: [
@@ -34,11 +30,9 @@ const CartSchema = new Schema<ICart>(
 );
 
 const CartModel =
-  mongoose.models.Cart || mongoose.model<ICart>("Cart", CartSchema);
+  (mongoose.models.Cart as mongoose.Model<any>) ||
+  mongoose.model("Cart", CartSchema);
 
-/* -------------------------------------------------------------------------- */
-/*                                   GET CART                                 */
-/* -------------------------------------------------------------------------- */
 export async function GET() {
   try {
     await connectDB();
@@ -46,7 +40,10 @@ export async function GET() {
     if (!session?.user?.email)
       return NextResponse.json({ items: [] }, { status: 200 });
 
-    const cart = await CartModel.findOne({ userEmail: session.user.email }).lean<ICart | null>();
+    const cart = await CartModel.findOne({ userEmail: session.user.email })
+      .lean()
+      .exec();
+
     return NextResponse.json({ items: cart?.items ?? [] }, { status: 200 });
   } catch (err: any) {
     console.error("❌ CART GET error:", err.message);
@@ -54,36 +51,40 @@ export async function GET() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                   SAVE CART                                */
-/* -------------------------------------------------------------------------- */
 export async function POST(req: Request) {
   try {
     await connectDB();
     const session = await getServerSession(authConfig);
     if (!session?.user?.email)
-      return NextResponse.json({ error: "Not logged in" }, { status: 200 });
+      return NextResponse.json(
+        { error: "Not logged in, using local cart only" },
+        { status: 200 }
+      );
 
-    const { items } = await req.json();
+    const { items } = (await req.json()) as { items: CartItem[] };
     if (!Array.isArray(items))
       return NextResponse.json({ error: "Invalid data" }, { status: 400 });
 
-    const result = await CartModel.findOneAndUpdate(
-      { userEmail: session.user.email },
-      { items, updatedAt: new Date() },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    ).lean<ICart>();
+    const userEmail = session.user.email;
 
-    return NextResponse.json({ success: true, items: result.items }, { status: 200 });
+    const result = await CartModel.findOneAndUpdate(
+      { userEmail },
+      { $set: { items, updatedAt: new Date() } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    )
+      .lean()
+      .exec();
+
+    return NextResponse.json(
+      { success: true, items: result?.items ?? [] },
+      { status: 200 }
+    );
   } catch (err: any) {
     console.error("❌ CART POST error:", err.message);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                   CLEAR CART                               */
-/* -------------------------------------------------------------------------- */
 export async function DELETE() {
   try {
     await connectDB();
@@ -91,7 +92,7 @@ export async function DELETE() {
     if (!session?.user?.email)
       return NextResponse.json({ success: false }, { status: 401 });
 
-    await CartModel.deleteOne({ userEmail: session.user.email });
+    await CartModel.deleteOne({ userEmail: session.user.email }).exec();
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err: any) {
     console.error("❌ CART DELETE error:", err.message);
