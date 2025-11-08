@@ -1,7 +1,5 @@
 import mongoose, { Schema, model, models } from "mongoose";
 
-if (!mongoose.models) mongoose.models = {};
-
 const OrderSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -24,5 +22,4 @@ const OrderSchema = new Schema(
   { timestamps: true }
 );
 
-// ✅ Prevent overwriting model on hot-reload (the key issue)
-export default models?.Order || model("Order", OrderSchema);
+export default models.Order || model("Order", OrderSchema);

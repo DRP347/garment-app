@@ -6,7 +6,7 @@ import OrderModel from "@/models/OrderModel";
 import UserModel from "@/models/UserModel";
 import mongoose from "mongoose";
 
-const WA_PHONE = "917202809157"; // without "+" or spaces
+const WA_PHONE = "917861988279";
 const MIN_QTY = 20;
 
 export async function GET() {
@@ -15,9 +15,10 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) return NextResponse.json([], { status: 200 });
 
-    const user = await UserModel.findOne({ email: session.user.email }).lean();
-    if (!user?._id) return NextResponse.json([], { status: 200 });
+    const userDoc = await UserModel.findOne({ email: session.user.email }).lean();
+    if (!userDoc) return NextResponse.json([], { status: 200 });
 
+    const user = userDoc as { _id: mongoose.Types.ObjectId };
     const orders = await OrderModel.find({ userId: user._id })
       .sort({ createdAt: -1 })
       .lean();
@@ -44,9 +45,19 @@ export async function POST(req: Request) {
     if (!rawItems.length || !totalAmount)
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
 
-    const user = await UserModel.findOne({ email: session.user.email }).lean();
-    if (!user?._id)
+    const userDoc = await UserModel.findOne({ email: session.user.email }).lean();
+    if (!userDoc)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    const user = userDoc as {
+      _id: mongoose.Types.ObjectId;
+      name?: string;
+      phone?: string;
+      businessName?: string;
+      shopName?: string;
+      businessType?: string;
+      accountType?: string;
+    };
 
     const items = rawItems.map((i) => ({
       name: i.name,
@@ -66,7 +77,6 @@ export async function POST(req: Request) {
       createdAt: new Date(),
     });
 
-    // WhatsApp message
     const lines = [
       "🧾 *New Garment Guy Order!*",
       "",
@@ -94,10 +104,7 @@ export async function POST(req: Request) {
       lines.join("\n")
     )}`;
 
-    return NextResponse.json(
-      { success: true, whatsappURL, orderId },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, whatsappURL, orderId }, { status: 201 });
   } catch (e) {
     console.error("POST /orders error:", e);
     return NextResponse.json(

@@ -3,16 +3,16 @@ import connectDB from "@/lib/db";
 import UserSettings from "@/models/UserSettings";
 import { getUserId } from "@/lib/getUserId";
 
-export async function GET(req: Request) {
+export async function GET() {
   await connectDB();
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   const doc = await UserSettings.findOne({ userId });
   return NextResponse.json(doc ?? {});
 }
 
 export async function PUT(req: Request) {
   await connectDB();
-  const userId = await getUserId(req);
+  const userId = await getUserId();
   const body = await req.json();
 
   const updated = await UserSettings.findOneAndUpdate(

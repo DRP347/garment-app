@@ -20,7 +20,7 @@ const SIZES = [28, 30, 32, 34, 36] as const;
 const MIN_QTY = 20;
 
 export default function ProductDetailPage() {
-  const params = useParams<{ id: string }>();
+  const params = useParams<{ id?: string }>();
   const router = useRouter();
   const { addToCart } = useCart();
 
@@ -29,10 +29,14 @@ export default function ProductDetailPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [size, setSize] = useState<number | null>(null);
 
+  const productId = params?.id ?? null;
+
   useEffect(() => {
+    if (!productId) return;
     (async () => {
       try {
-        const res = await fetch(`/api/products/${params.id}`);
+        const res = await fetch(`/api/products/${productId}`);
+        if (!res.ok) throw new Error("Failed");
         const data = await res.json();
         setProduct(data);
       } catch {
@@ -41,7 +45,7 @@ export default function ProductDetailPage() {
         setLoading(false);
       }
     })();
-  }, [params.id]);
+  }, [productId]);
 
   const imgs = useMemo(
     () => (product?.images?.length ? product.images : ["/placeholder.png"]),
@@ -58,17 +62,15 @@ export default function ProductDetailPage() {
       price: product.price,
       image: imgs[0],
       quantity: MIN_QTY,
-      size: size as number,
-    } as any);
+      size,
+    });
 
     if (goCheckout) router.push("/checkout");
     else toast.success("Added to cart");
   };
 
   if (loading)
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-16 text-[#0A3D79]">Loading…</div>
-    );
+    return <div className="max-w-6xl mx-auto px-4 py-16 text-[#0A3D79]">Loading…</div>;
 
   if (!product)
     return (
@@ -112,7 +114,6 @@ export default function ProductDetailPage() {
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#0A3D79]">
             {product.name}
           </h1>
-
           <div className="mt-3 text-2xl font-bold text-[#0A3D79]">
             ₹{product.price.toFixed(2)}
           </div>
