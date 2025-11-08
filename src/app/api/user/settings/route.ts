@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";            // you already have db.ts
+import connectDB from "@/lib/db";
 import UserSettings from "@/models/UserSettings";
 import { getUserId } from "@/lib/getUserId";
 
