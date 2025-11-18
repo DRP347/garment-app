@@ -1,23 +1,34 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 
-const UserSchema = new Schema(
+export interface UserDoc extends Document {
+  _id: mongoose.Types.ObjectId;
+  name: string;
+  email: string;
+  password: string;
+  role: "buyer" | "seller" | "admin";
+  status: "pending" | "approved" | "rejected";
+  phone?: string;
+  shopName?: string;
+  businessName?: string;
+  businessType?: string;
+  accountType?: string;
+}
+
+const UserSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String },
-    phone: { type: String, default: "" },
-    shopName: { type: String, default: "" },
-    businessName: { type: String, default: "" },
-    businessType: { type: String, default: "" },
-    accountType: {
-      type: String,
-      enum: ["Retailer", "Wholesaler", "Buyer", "Other"],
-      default: "Buyer",
-    },
+    password: { type: String, required: true },
     role: { type: String, default: "buyer" },
-    status: { type: String, default: "approved" },
+    status: { type: String, default: "pending" },
+    phone: String,
+    shopName: String,
+    businessName: String,
+    businessType: String,
+    accountType: String,
   },
   { timestamps: true }
 );
 
-export default models?.User || model("User", UserSchema);
+export default mongoose.models.User ||
+  mongoose.model<UserDoc>("User", UserSchema);

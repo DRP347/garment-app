@@ -1,32 +1,61 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/db";
-import User from "@/models/User";
+import UserModel from "@/models/UserModel";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
-
-    if (!name || !email || !password)
-      return NextResponse.json({ message: "Missing fields" }, { status: 400 });
-
     await connectDB();
+    const body = await req.json();
 
-    const existing = await User.findOne({ email: email.toLowerCase() });
-    if (existing)
-      return NextResponse.json({ message: "User already exists" }, { status: 400 });
-
-    const hashed = await bcrypt.hash(password, 10);
-
-    await User.create({
+    const {
       name,
-      email: email.toLowerCase(),
-      password: hashed,
+      email,
+      password,
+      phone,
+      shopName,
+      businessName,
+      businessType,
+      accountType,
+    } = body;
+
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const exists = await UserModel.findOne({ email });
+    if (exists) {
+      return NextResponse.json(
+        { error: "Email already registered" },
+        { status: 409 }
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await UserModel.create({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      shopName,
+      businessName,
+      businessType,
+      accountType,
     });
 
-    return NextResponse.json({ message: "User registered successfully" }, { status: 201 });
-  } catch (err) {
-    console.error("❌ Register Error:", err);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      { message: "User created" },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("REGISTER ERROR:", error);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

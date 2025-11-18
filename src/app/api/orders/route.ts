@@ -1,31 +1,44 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import authOptions from "@/auth.config";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import connectDB from "@/lib/db";
 import OrderModel from "@/models/OrderModel";
-import UserModel from "@/models/UserModel";
+import User, { UserDoc } from "@/models/UserModel";
 import mongoose from "mongoose";
 
-const WA_PHONE = "917861988279";
 const MIN_QTY = 20;
+
+type RawItem = {
+  name: string;
+  quantity: number;
+  price?: number;
+  size?: number;
+};
 
 export async function GET() {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json([], { status: 200 });
 
-    const userDoc = await UserModel.findOne({ email: session.user.email }).lean();
-    if (!userDoc) return NextResponse.json([], { status: 200 });
+    const session = await getServerSession(authOptions) as {
+      user?: { email?: string };
+    } | null;
 
-    const user = userDoc as { _id: mongoose.Types.ObjectId };
+    if (!session?.user?.email)
+      return NextResponse.json([], { status: 200 });
+
+    const user = await User.findOne({ email: session.user.email })
+      .lean<UserDoc | null>();
+
+    if (!user)
+      return NextResponse.json([], { status: 200 });
+
     const orders = await OrderModel.find({ userId: user._id })
       .sort({ createdAt: -1 })
       .lean();
 
     return NextResponse.json(orders, { status: 200 });
-  } catch (e) {
-    console.error("GET /orders error:", e);
+  } catch (err) {
+    console.error("GET Orders ERROR:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
@@ -33,35 +46,44 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await connectDB();
-    const session = await getServerSession(authOptions);
+
+    const session = await getServerSession(authOptions) as {
+      user?: { email?: string };
+    } | null;
+
     if (!session?.user?.email)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Read Request Body
     const body = await req.json();
-    const rawItems: Array<{ name: string; quantity: number; price?: number; size?: number }> =
-      Array.isArray(body.items) ? body.items : [];
+    const rawItems: RawItem[] = body.items;
     const totalAmount = Number(body.totalAmount || 0);
 
-    if (!rawItems.length || !totalAmount)
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    if (!rawItems?.length || !totalAmount)
+      return NextResponse.json(
+        { error: "Missing items or totalAmount" },
+        { status: 400 }
+      );
 
-    const userDoc = await UserModel.findOne({ email: session.user.email }).lean();
-    if (!userDoc)
+    // Fetch user data
+    const user = await User.findOne({ email: session.user.email })
+      .lean<UserDoc | null>();
+
+    if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    const user = userDoc as {
-      _id: mongoose.Types.ObjectId;
-      name?: string;
-      phone?: string;
-      businessName?: string;
-      shopName?: string;
-      businessType?: string;
-      accountType?: string;
-    };
+    // Use fields from UserModel
+    const customerName = user.name || "Unknown";
+    const customerPhone = user.phone || "N/A";
+    const customerAddress =
+      user.businessName ||
+      user.shopName ||
+      user.businessType ||
+      "No address provided";
 
     const items = rawItems.map((i) => ({
       name: i.name,
-      quantity: Math.max(MIN_QTY, Number(i.quantity || 0)),
+      quantity: Math.max(MIN_QTY, i.quantity),
       price: i.price,
       size: i.size,
     }));
@@ -69,47 +91,51 @@ export async function POST(req: Request) {
     const orderId = `GG-${Math.floor(100000 + Math.random() * 900000)}`;
 
     await OrderModel.create({
-      userId: new mongoose.Types.ObjectId(String(user._id)),
+      userId: new mongoose.Types.ObjectId(user._id),
       orderId,
       items,
       total: totalAmount,
       status: "Pending",
+      customerName,
+      customerPhone,
+      customerAddress,
       createdAt: new Date(),
     });
 
-    const lines = [
-      "🧾 *New Garment Guy Order!*",
-      "",
-      `*Order ID:* ${orderId}`,
-      `*Name:* ${user.name || "N/A"}`,
-      `*Phone:* ${user.phone || "N/A"}`,
-      `*Business:* ${user.businessName || user.shopName || "N/A"}`,
-      `*Type:* ${user.businessType || user.accountType || "N/A"}`,
-      "",
-      "*Items:*",
-      ...items.map(
-        (i) =>
-          `• ${i.name}${i.size ? ` (Size ${i.size})` : ""} × ${i.quantity}${
-            i.price ? ` — ₹${i.price}` : ""
-          }`
-      ),
-      "",
-      `*Total:* ₹${totalAmount.toLocaleString("en-IN")}`,
-      `🕒 *Status:* Pending`,
-      "",
-      "Thank you for ordering with The Garment Guy.",
-    ];
+    // Generate WhatsApp Message
+    const message = `
+*New Order — The Garment Guy*
+Order ID: *${orderId}*
 
-    const whatsappURL = `https://wa.me/${WA_PHONE}?text=${encodeURIComponent(
-      lines.join("\n")
-    )}`;
+*Customer Details*
+Name: ${customerName}
+Phone: ${customerPhone}
+Address: ${customerAddress}
 
-    return NextResponse.json({ success: true, whatsappURL, orderId }, { status: 201 });
-  } catch (e) {
-    console.error("POST /orders error:", e);
+*Order Summary*
+${items
+  .map(
+    (i) => `• ${i.name} — ${i.quantity} pcs × ₹${i.price} = ₹${i.quantity * (i.price || 0)}`
+  )
+  .join("\n")}
+
+*Total:* ₹${totalAmount}
+    `;
+
+    const whatsappURL =
+      "https://wa.me/919879027882?text=" +
+      encodeURIComponent(message);
+
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Server error" },
-      { status: 500 }
+      {
+        success: true,
+        orderId,
+        whatsappURL,
+      },
+      { status: 201 }
     );
+  } catch (err) {
+    console.error("POST Orders ERROR:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

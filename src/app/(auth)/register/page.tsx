@@ -7,14 +7,18 @@ import toast from "react-hot-toast";
 
 export default function RegisterPage() {
   const router = useRouter();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     phone: "",
     shopName: "",
+    businessName: "",
+    businessType: "Retail",
     accountType: "Retailer",
   });
+
   const [loading, setLoading] = useState(false);
 
   const handleChange = (
@@ -26,20 +30,21 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/register", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (res.ok) {
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Registration failed");
+      } else {
         toast.success("Account created! Please log in.");
         router.push("/login");
-      } else {
-        const data = await res.json();
-        toast.error(data.message || "Registration failed");
       }
-    } catch {
+    } catch (err) {
       toast.error("Server error");
     } finally {
       setLoading(false);
@@ -54,6 +59,7 @@ export default function RegisterPage() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name */}
           <div>
             <label className="text-sm font-medium text-gray-600">Name</label>
             <input
@@ -66,6 +72,7 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Email */}
           <div>
             <label className="text-sm font-medium text-gray-600">Email</label>
             <input
@@ -78,6 +85,7 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Password */}
           <div>
             <label className="text-sm font-medium text-gray-600">Password</label>
             <input
@@ -90,6 +98,7 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Phone */}
           <div>
             <label className="text-sm font-medium text-gray-600">Phone</label>
             <input
@@ -102,6 +111,7 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Shop / Business Name */}
           <div>
             <label className="text-sm font-medium text-gray-600">
               Shop / Business Name
@@ -115,6 +125,24 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* Business Type */}
+          <div>
+            <label className="text-sm font-medium text-gray-600">
+              Business Type
+            </label>
+            <select
+              name="businessType"
+              value={form.businessType}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
+            >
+              <option value="Retail">Retail</option>
+              <option value="Wholesale">Wholesale</option>
+              <option value="Manufacturer">Manufacturer</option>
+            </select>
+          </div>
+
+          {/* Account Type (Retailer/Wholesaler) */}
           <div>
             <label className="text-sm font-medium text-gray-600">
               Account Type

@@ -31,6 +31,6 @@ export function makeWhatsAppCheckoutLink({
 
   const text = encodeURIComponent(lines.join("\n"));
   // ✅ Default to your business WhatsApp number
-  const finalNumber = phoneE164 || "917202809157";
+  const finalNumber = phoneE164 || "917861988279";
   return `https://wa.me/${finalNumber}?text=${text}`;
 }

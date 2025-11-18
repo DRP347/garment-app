@@ -1,29 +1,42 @@
-import mongoose, { Schema, Document, models } from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
-export interface ICartItem {
-  productId: string;
+export interface CartItem {
+  id?: string;
   name: string;
   price: number;
-  image?: string;
   quantity: number;
+  image?: string;
 }
 
-export interface ICart extends Document {
-  userId: string;
-  items: ICartItem[];
+export interface CartDoc {
+  userEmail: string;
+  items: CartItem[];
+  updatedAt: Date;
 }
 
-const CartSchema = new Schema<ICart>({
-  userId: { type: String, required: true, unique: true },
-  items: [
-    {
-      productId: String,
-      name: String,
-      price: Number,
-      image: String,
-      quantity: { type: Number, default: 1 },
-    },
-  ],
-});
+const CartSchema = new Schema<CartDoc>(
+  {
+    userEmail: { type: String, required: true, unique: true },
+    items: [
+      {
+        id: String,
+        name: String,
+        price: Number,
+        quantity: Number,
+        image: String,
+      },
+    ],
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { collection: "carts", versionKey: false }
+);
 
-export default models.Cart || mongoose.model<ICart>("Cart", CartSchema);
+// FIX: allow deleting model safely
+if (mongoose.models.Cart) {
+  delete (mongoose.models as any).Cart;
+}
+
+const CartModel: Model<CartDoc> =
+  mongoose.models.Cart || mongoose.model<CartDoc>("Cart", CartSchema);
+
+export default CartModel;
