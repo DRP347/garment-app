@@ -10,12 +10,12 @@ export const metadata = {
   keywords:
     "wholesale jeans, garment supplier, denim manufacturer India, cargo pants wholesale, The Garment Guy, B2B clothing, fashion manufacturing, jeans bulk order",
   authors: [{ name: "The Garment Guy" }],
-  metadataBase: new URL("https://garment-app-one.vercel.app"),
+  metadataBase: new URL("https://thegarmentguy.in"),
   openGraph: {
     title: "The Garment Guy — Wholesale Denim & Garments",
     description:
       "Premium denim and cargo manufacturer for Indian retailers. Trusted quality, quick delivery, and best wholesale prices.",
-    url: "https://garment-app-one.vercel.app",
+    url: "https://thegarmentguy.in",
     siteName: "The Garment Guy",
     images: [
       {
@@ -44,6 +44,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        {/* GOOGLE SITE VERIFICATION */}
+        <meta
+          name="google-site-verification"
+          content="PASTE_YOUR_VERIFICATION_CODE"
+        />
+
         {/* GOOGLE ANALYTICS */}
         <Script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX" />
         <Script id="google-analytics" strategy="afterInteractive">
@@ -56,16 +62,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
 
         {/* META PIXEL */}
-        <Script id="meta-pixel" strategy="afterInteractive">
+        <Script id="fbq-setup" strategy="afterInteractive">
           {`
-            !function(f,b,e,v,n,t,s)
-            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-            n.queue=[];t=b.createElement(e);t.async=!0;
-            t.src=v;s=b.getElementsByTagName(e)[0];
-            s.parentNode.insertBefore(t,s)}(window, document,'script',
-            'https://connect.facebook.net/en_US/fbevents.js');
+            // fbq global shim
+            window.fbq = window.fbq || function() {
+              if (fbq.callMethod) {
+                fbq.callMethod.apply(fbq, arguments);
+              } else {
+                fbq.queue.push(arguments);
+              }
+            };
+            window._fbq = window._fbq || fbq;
+            fbq.push = fbq;
+            fbq.loaded = true;
+            fbq.version = '2.0';
+            fbq.queue = [];
+
+            (function(f,b,e,v,n,t,s){
+              if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)
+            })(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
             fbq('init', '1167525748315546');
             fbq('track', 'PageView');

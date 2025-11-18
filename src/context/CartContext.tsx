@@ -27,13 +27,19 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const syncTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Load from DB or localStorage
+  // Load cart from DB or localStorage
   useEffect(() => {
     const loadCart = async () => {
-      if (status !== "authenticated" || !session?.user?.email) return;
+      if (status !== "authenticated" || !session?.user?.email) {
+        const local = localStorage.getItem("cart");
+        if (local) setCart(JSON.parse(local));
+        return;
+      }
+
       try {
         const res = await fetch("/api/cart", { credentials: "include" });
         const data = await res.json();
+
         if (Array.isArray(data.items) && data.items.length) {
           setCart(data.items);
           localStorage.setItem("cart", JSON.stringify(data.items));
@@ -45,6 +51,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         console.error("load cart error:", err);
       }
     };
+
     loadCart();
   }, [status, session?.user?.email]);
 
@@ -56,21 +63,29 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, [status]);
 
+  // Sync cart to DB (debounced)
   const syncDB = async (updated: CartItem[]) => {
     localStorage.setItem("cart", JSON.stringify(updated));
+
     if (status !== "authenticated") return;
+
     if (syncTimer.current) clearTimeout(syncTimer.current);
+
     syncTimer.current = setTimeout(async () => {
-      await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: updated }),
-        credentials: "include",
-      });
+      try {
+        await fetch("/api/cart", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: updated }),
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("sync DB error:", err);
+      }
     }, 400);
   };
 
-  // Add to cart (min 20 pcs)
+  // Add to cart (MIN 20 PCS) + Pixel Event
   const addToCart = async (item: CartItem) => {
     const updated = [...cart];
     const existing = updated.find((p) => p._id === item._id || p.id === item.id);
@@ -83,10 +98,20 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       toast("Minimum 20 pcs added to cart");
     }
 
+    // 🔥 META PIXEL — AddToCart event
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      (window as any).fbq("track", "AddToCart", {
+        content_name: item.name,
+        value: item.price,
+        currency: "INR",
+      });
+    }
+
     setCart(updated);
     syncDB(updated);
   };
 
+  // Remove item
   const removeFromCart = async (id: string) => {
     const updated = cart.filter((i) => i._id !== id && i.id !== id);
     setCart(updated);
@@ -94,6 +119,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     toast.success("Item removed");
   };
 
+  // Clear cart
   const clearCart = async () => {
     setCart([]);
     localStorage.removeItem("cart");
@@ -102,7 +128,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

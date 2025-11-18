@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
+export const revalidate = 120; // 👈 2 minute API cache
+
 export async function GET() {
   try {
     const client = await clientPromise;

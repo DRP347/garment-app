@@ -1,86 +1,50 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import authOptions from "@/pages/api/auth/[...nextauth]";
-import connectDB from "@/lib/db";
-import CartModel from "@/models/Cart";
+import clientPromise from "@/lib/mongodb";
+import { getServerSession } from "next-auth";
+import authOptions from "@/auth.config";
 
 export async function GET() {
   try {
-    await connectDB();
+    const session = await getServerSession(authOptions);
+    const client = await clientPromise;
+    const db = client.db("TheGarmentGuyDB");
 
-    const session = (await getServerSession(authOptions)) as {
-      user?: { email?: string };
-    };
+    if (!session?.user?.email) {
+      return NextResponse.json({ items: [] });
+    }
 
-    if (!session?.user?.email)
-      return NextResponse.json({ items: [] }, { status: 200 });
-
-    const cart = await CartModel.findOne({
+    const cart = await db.collection("carts").findOne({
       userEmail: session.user.email,
-    }).lean();
+    });
 
-    return NextResponse.json(
-      { items: cart?.items ?? [] },
-      { status: 200 }
-    );
+    return NextResponse.json({ items: cart?.items || [] });
   } catch (err: any) {
-    console.error("❌ CART GET error:", err.message);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("CART GET ERROR:", err);
+    return NextResponse.json({ items: [] });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(request: Request) {
   try {
-    await connectDB();
-
-    const session = (await getServerSession(authOptions)) as {
-      user?: { email?: string };
-    };
-
+    const session = await getServerSession(authOptions);
     if (!session?.user?.email)
-      return NextResponse.json(
-        { error: "Not logged in, using local cart only" },
-        { status: 200 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { items } = await req.json();
-    if (!Array.isArray(items))
-      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+    const client = await clientPromise;
+    const db = client.db("TheGarmentGuyDB");
 
-    const userEmail = session.user.email;
+    const body = await request.json();
+    const { items } = body;
 
-    const updated = await CartModel.findOneAndUpdate(
-      { userEmail },
-      { $set: { items, updatedAt: new Date() } },
-      { upsert: true, new: true }
-    ).lean();
-
-    return NextResponse.json(
-      { success: true, items: updated?.items ?? [] },
-      { status: 200 }
+    await db.collection("carts").updateOne(
+      { userEmail: session.user.email },
+      { $set: { items } },
+      { upsert: true }
     );
+
+    return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("❌ CART POST error:", err.message);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
-  }
-}
-
-export async function DELETE() {
-  try {
-    await connectDB();
-
-    const session = (await getServerSession(authOptions)) as {
-      user?: { email?: string };
-    };
-
-    if (!session?.user?.email)
-      return NextResponse.json({ success: false }, { status: 401 });
-
-    await CartModel.deleteOne({ userEmail: session.user.email });
-
-    return NextResponse.json({ success: true }, { status: 200 });
-  } catch (err: any) {
-    console.error("❌ CART DELETE error:", err.message);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("CART POST ERROR:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
