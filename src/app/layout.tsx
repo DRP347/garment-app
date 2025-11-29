@@ -4,17 +4,18 @@ import ClientProviders from "@/components/ClientProviders";
 import Script from "next/script";
 
 export const metadata = {
-  title: "The Garment Guy — Premium Wholesale Denim",
+  title: "The Garment Guy — Trusted Clothing Manufacturer",
   description:
-    "Buy premium jeans, cargos, and denims directly from The Garment Guy. India's trusted B2B clothing supplier with fast dispatch and quality guaranteed.",
+    "Leading manufacturer of jeans, cargos, and custom apparel. High-quality production, reliable delivery, and competitive pricing for brands and retailers across India.",
   keywords:
-    "wholesale jeans, garment supplier, denim manufacturer India, cargo pants wholesale, The Garment Guy, B2B clothing, fashion manufacturing, jeans bulk order",
+    "clothing manufacturer India, jeans manufacturer, cargo pants manufacturer, custom apparel production, private label clothing, garment factory India, apparel manufacturing, denim manufacturer",
   authors: [{ name: "The Garment Guy" }],
   metadataBase: new URL("https://thegarmentguy.in"),
+
   openGraph: {
-    title: "The Garment Guy — Wholesale Denim & Garments",
+    title: "The Garment Guy — Trusted Clothing Manufacturer",
     description:
-      "Premium denim and cargo manufacturer for Indian retailers. Trusted quality, quick delivery, and best wholesale prices.",
+      "Premium manufacturer of jeans, cargos, and custom apparel for Indian retailers and brands. High-quality production and fast delivery.",
     url: "https://thegarmentguy.in",
     siteName: "The Garment Guy",
     images: [
@@ -22,19 +23,21 @@ export const metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "The Garment Guy — Premium Wholesale Denim",
+        alt: "The Garment Guy — Trusted Clothing Manufacturer",
       },
     ],
     locale: "en_IN",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "The Garment Guy — India's Trusted Garment Supplier",
+    title: "The Garment Guy — Trusted Clothing Manufacturer",
     description:
-      "B2B wholesale jeans and cargo supplier. Premium denim at the best price, shipped across India.",
+      "Manufacturer of jeans, cargos, and custom clothing with quality production and reliable delivery across India.",
     images: ["/og-image.jpg"],
   },
+
   icons: {
     icon: "/favicon.ico",
   },
@@ -64,7 +67,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* META PIXEL */}
         <Script id="fbq-setup" strategy="afterInteractive">
           {`
-            // fbq global shim
             window.fbq = window.fbq || function() {
               if (fbq.callMethod) {
                 fbq.callMethod.apply(fbq, arguments);
