@@ -4,13 +4,16 @@ import { ObjectId } from "mongodb";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params; // REQUIRED FIX
+    const { id } = await params; // ⭐ REQUIRED FIX ⭐
 
     if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid product ID" },
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
@@ -20,8 +23,16 @@ export async function GET(
       .collection("products")
       .findOne({ _id: new ObjectId(id) });
 
-    return NextResponse.json(product || {}, { status: 200 });
+    if (!product) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(product, { status: 200 });
   } catch (err) {
+    console.error("Product fetch failed:", err);
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
