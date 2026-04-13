@@ -1,15 +1,14 @@
 import ImageGalleryClient from "./ImageGalleryClient";
-import AddToCartClient from "./AddToCartClient";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { notFound } from "next/navigation";
-
+import BuyNowButton from "./BuyNowButton";
 type Product = {
   _id: string;
   name: string;
-  description?: string;
   price: number;
   images?: string[];
+  category?: string;
 };
 
 export const dynamic = "force-dynamic";
@@ -37,55 +36,65 @@ export default async function ProductPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
+  const { id } = await params; // ✅ FIXED (important for Next 15)
 
   const product = await getProduct(id);
   if (!product) return notFound();
 
-  const imgs = product.images?.length ? product.images : ["/placeholder.png"];
+  const images =
+    product.images && product.images.length > 0
+      ? product.images
+      : ["/placeholder.png"];
+
+  // ✅ Sleeve Detection
+  const name = product.name.toLowerCase();
+
+  const isShortSleeve =
+    name.includes("ss") || name.includes("short");
+
+  const isLongSleeve =
+    name.includes("ls") || name.includes("long");
+
+  const type = isShortSleeve
+    ? "Short Sleeve Shirt"
+    : isLongSleeve
+    ? "Long Sleeve Shirt"
+    : product.category || "Garment";
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
 
-        {/* Image Gallery */}
-        <ImageGalleryClient images={imgs} name={product.name} />
+        {/* ✅ IMAGE GALLERY */}
+        <ImageGalleryClient images={images} name={product.name} />
 
-        {/* RIGHT SIDE CONTENT */}
+        {/* ✅ RIGHT SIDE */}
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-[#0A3D79]">
             {product.name}
           </h1>
 
-          <div className="mt-3 text-2xl font-bold text-[#0A3D79]">
-            ₹{product.price.toFixed(2)}
+          <p className="mt-3 text-2xl font-bold text-[#0A3D79]">
+            ₹{product.price || 0}
+          </p>
+
+          
+          {/* ✅ DETAILS */}
+          <div className="mt-6 text-sm text-gray-700 space-y-2">
+            <p><strong>Type:</strong> {type}</p>
+            <p><strong>Fabric:</strong> Premium Cotton</p>
+            <p><strong>Fit:</strong> Regular Fit</p>
+            <p><strong>Dispatch:</strong> 5–7 days</p>
           </div>
 
-          {/* ADD TO CART CLIENT UI */}
-          <AddToCartClient
-            product={{
-              _id: product._id,
-              name: product.name,
-              price: product.price,
-              image: imgs[0],
-            }}
-          />
+          {/* ✅ BUY BUTTON */}
+          <BuyNowButton
+  productName={product.name}
+  price={product.price || 0}
+  type={type}
+/>
 
-          {/* DETAILS */}
-          <div className="mt-8 space-y-3 text-sm text-gray-700">
-            <p>
-              {product.description ||
-                "Premium denim crafted for comfort and durability."}
-            </p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Material: 100% Cotton Denim</li>
-              <li>Fit: Relaxed / Straight</li>
-              <li>Care: Machine wash cold. Do not bleach.</li>
-              <li>Dispatch: 5–7 working days</li>
-            </ul>
-          </div>
         </div>
-
       </div>
     </div>
   );
