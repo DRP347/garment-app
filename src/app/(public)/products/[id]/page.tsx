@@ -60,6 +60,8 @@ export default async function ProductPage({
     : isLongSleeve
     ? "Long Sleeve Shirt"
     : product.category || "Garment";
+  const category = (product.category || "").toLowerCase();
+  const isSoldOut = category.includes("denim") || category.includes("cargo");
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -78,6 +80,12 @@ export default async function ProductPage({
             ₹{product.price || 0}
           </p>
 
+          {isSoldOut && (
+            <p className="mt-3 inline-flex rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white">
+              Sold Out
+            </p>
+          )}
+          
           
           {/* ✅ DETAILS */}
           <div className="mt-6 text-sm text-gray-700 space-y-2">
@@ -92,6 +100,7 @@ export default async function ProductPage({
   productName={product.name}
   price={product.price || 0}
   type={type}
+  isSoldOut={isSoldOut}
 />
 
         </div>

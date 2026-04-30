@@ -6,9 +6,15 @@ type Props = {
   productName: string;
   price: number;
   type: string;
+  isSoldOut?: boolean;
 };
 
-export default function BuyNowButton({ productName, price, type }: Props) {
+export default function BuyNowButton({
+  productName,
+  price,
+  type,
+  isSoldOut = false,
+}: Props) {
   const [moq, setMoq] = useState("8");
 
   const handleBuy = () => {
@@ -45,7 +51,8 @@ Please confirm availability.
       <select
         value={moq}
         onChange={(e) => setMoq(e.target.value)}
-        className="mt-2 w-full border rounded-lg px-3 py-2"
+        disabled={isSoldOut}
+        className="mt-2 w-full border rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400"
       >
         {[8, 9, 10, 11, 12, 20, 30, 50].map((q) => (
           <option key={q} value={q}>
@@ -57,9 +64,14 @@ Please confirm availability.
       {/* BUTTON */}
       <button
         onClick={handleBuy}
-        className="mt-6 w-full bg-[#0A3D79] text-white py-3 rounded-lg font-semibold hover:bg-[#08325f] transition"
+        disabled={isSoldOut}
+        className={`mt-6 w-full py-3 rounded-lg font-semibold transition ${
+          isSoldOut
+            ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+            : "bg-[#0A3D79] text-white hover:bg-[#08325f]"
+        }`}
       >
-        Buy Now on WhatsApp
+        {isSoldOut ? "Sold Out" : "Buy Now on WhatsApp"}
       </button>
     </div>
   );

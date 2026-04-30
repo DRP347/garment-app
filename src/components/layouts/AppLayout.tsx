@@ -109,7 +109,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-3">Quick Links</h4>
+            <h4 className="font-semibold mb-3">Quick Link</h4>
             <ul className="space-y-2 text-sm text-white/80">
               <li>
                 <Link href="/products" className="hover:text-white">

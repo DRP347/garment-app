@@ -32,6 +32,8 @@ export default function ProductCard({ product }: { product: Product }) {
     : isLongSleeve
     ? "Long Sleeve Shirt"
     : product.category || "Garment";
+  const category = (product.category || "").toLowerCase();
+  const isSoldOut = category.includes("denim") || category.includes("cargo");
 
   const message = `
 🧾 New Garment Guy Order!
@@ -68,7 +70,9 @@ Please confirm availability.
             src={hovered ? images[1] || images[0] : images[0]}
             alt={product.name}
             fill
-            className="object-cover transition duration-300 group-hover:scale-105"
+            className={`object-cover transition duration-300 ${
+              isSoldOut ? "grayscale" : "group-hover:scale-105"
+            }`}
           />
 
           {/* LEFT OVERLAY DESCRIPTION */}
@@ -77,6 +81,12 @@ Please confirm availability.
             <p>• Premium Cotton</p>
             <p>• MOQ: 8 pcs</p>
           </div>
+
+          {isSoldOut && (
+            <div className="absolute top-3 left-3 rounded-md bg-red-600 px-3 py-1 text-xs font-bold tracking-wide text-white">
+              SOLD OUT
+            </div>
+          )}
         </div>
 
         {/* CONTENT */}
@@ -103,15 +113,21 @@ Please confirm availability.
         </Link>
 
         {/* BUY */}
-        <a
-          href={whatsappUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="flex-1 text-center bg-[#0A3D79] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#08325f]"
-        >
-          Buy
-        </a>
+        {isSoldOut ? (
+          <span className="flex-1 text-center bg-gray-300 text-gray-600 py-2 rounded-lg text-sm font-medium cursor-not-allowed">
+            Sold Out
+          </span>
+        ) : (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 text-center bg-[#0A3D79] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#08325f]"
+          >
+            Buy
+          </a>
+        )}
       </div>
 
       {/* MOBILE FIX: ALWAYS CLICKABLE */}
