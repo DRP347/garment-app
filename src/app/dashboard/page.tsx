@@ -1,24 +1,20 @@
-"use client";
+import { getServerSession } from "next-auth/next";
+import { redirect } from "next/navigation";
+import { authOptions } from "@/pages/api/auth/[...nextauth]";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+function dashboardPathForRole(role?: string) {
+  if (role === "admin") return "/dashboard/admin";
+  if (role === "seller") return "/dashboard/seller";
+  if (role === "buyer") return "/dashboard/buyer";
+  return "/login";
+}
 
-export default function DashboardPage() {
-  const router = useRouter();
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions);
 
-  useEffect(() => {
-    const role = "buyer"; // or "seller"
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-    if (role === "buyer") router.replace("/dashboard/buyer");
-    else if (role === "seller") router.replace("/dashboard/seller");
-    else router.replace("/login");
-  }, [router]);
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-[#F9FAFB] text-[#0A3D79]">
-      <p className="text-lg font-medium animate-pulse">
-        Redirecting to your dashboard...
-      </p>
-    </div>
-  );
+  redirect(dashboardPathForRole(session.user.role));
 }

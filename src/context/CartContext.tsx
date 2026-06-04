@@ -4,18 +4,24 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 
+type MetaPixelWindow = Window & {
+  fbq?: (command: string, event: string, params?: Record<string, unknown>) => void;
+};
+
 interface CartItem {
   _id?: string;
   id?: string;
   name: string;
   price: number;
   image?: string;
+  sellerId?: string;
   quantity: number;
-   size?: number;
+  size?: number;
 }
 
 interface CartContextType {
   cart: CartItem[];
+  cartItems: CartItem[];
   addToCart: (item: CartItem) => Promise<void>;
   removeFromCart: (id: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -100,8 +106,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     // 🔥 META PIXEL — AddToCart event
-    if (typeof window !== "undefined" && (window as any).fbq) {
-      (window as any).fbq("track", "AddToCart", {
+    const fbq =
+      typeof window !== "undefined" ? (window as MetaPixelWindow).fbq : undefined;
+
+    if (fbq) {
+      fbq("track", "AddToCart", {
         content_name: item.name,
         value: item.price,
         currency: "INR",
@@ -132,6 +141,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     <CartContext.Provider
       value={{
         cart,
+        cartItems: cart,
         addToCart,
         removeFromCart,
         clearCart,

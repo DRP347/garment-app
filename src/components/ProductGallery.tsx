@@ -6,7 +6,7 @@ import Image from "next/image";
 export default function ProductGallery({ images }: { images: string[] }) {
   const validImages = Array.isArray(images) && images.length > 0
     ? images
-    : ["/placeholder.png"];
+    : ["/image/img1.webp"];
   const [active, setActive] = useState(0);
 
   return (
@@ -27,7 +27,7 @@ export default function ProductGallery({ images }: { images: string[] }) {
               width={64}
               height={64}
               unoptimized
-              onError={(e) => ((e.target as HTMLImageElement).src = "/placeholder.png")}
+              onError={(e) => ((e.target as HTMLImageElement).src = "/image/img1.webp")}
               className="object-cover w-full h-full"
             />
           </button>
@@ -44,7 +44,7 @@ export default function ProductGallery({ images }: { images: string[] }) {
             unoptimized
             sizes="(max-width: 768px) 100vw, 600px"
             className="object-cover"
-            onError={(e) => ((e.target as HTMLImageElement).src = "/placeholder.png")}
+            onError={(e) => ((e.target as HTMLImageElement).src = "/image/img1.webp")}
           />
         </div>
       </div>

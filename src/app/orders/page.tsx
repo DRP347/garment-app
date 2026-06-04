@@ -6,10 +6,23 @@ type Order = {
   _id: string;
   orderId?: string;
   total: number;
+  totalAmount?: number;
   status: string;
   createdAt?: string;
   items: { name: string; quantity: number; price?: number }[];
 };
+
+function statusLabel(status?: string) {
+  if (status === "purchased") return "Purchased";
+  if (status === "cancelled") return "Cancelled";
+  if (status === "ignored") return "Ignored";
+  if (status === "in_process") return "In Process";
+  return status || "In Process";
+}
+
+function orderTotal(order: Order) {
+  return Number(order.totalAmount ?? order.total ?? 0);
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -65,9 +78,9 @@ export default function OrdersPage() {
 
                   <div className="text-right">
                     <p className="font-bold text-[#0A3D79]">
-                      ₹{o.total.toFixed(2)}
+                      ₹{orderTotal(o).toFixed(2)}
                     </p>
-                    <p className="text-sm text-gray-600">{o.status}</p>
+                    <p className="text-sm text-gray-600">{statusLabel(o.status)}</p>
                   </div>
                 </div>
 

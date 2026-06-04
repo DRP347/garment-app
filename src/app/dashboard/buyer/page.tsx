@@ -1,57 +1,151 @@
-"use client";
+import Link from "next/link";
+import { CheckCircle2, Clock3, PackageSearch, ShoppingBag, XCircle } from "lucide-react";
+import connectDB from "@/lib/db";
+import { requireDashboardRolePage } from "@/lib/authz";
+import OrderModel from "@/models/OrderModel";
+import BuyerOrdersTable, {
+  type BuyerOrderRow,
+} from "@/components/dashboard/BuyerOrdersTable";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  EmptyState,
+  MetricCard,
+  MetricGrid,
+  StatusBadge,
+} from "@/components/dashboard/DashboardPrimitives";
+import { formatINR } from "@/lib/utils";
 
-export default function BuyerDashboardPage() {
-  const orders = [
-    { id: "#0012", date: "2025-10-10", status: "Delivered", amount: "₹1,499" },
-    { id: "#0013", date: "2025-10-12", status: "Processing", amount: "₹899" },
-    { id: "#0014", date: "2025-10-14", status: "Cancelled", amount: "₹1,099" },
-  ];
+function orderTotal(order: BuyerOrderRow) {
+  return Number(order.totalAmount ?? order.total ?? 0);
+}
+
+function formatDate(value?: string) {
+  if (!value || Number.isNaN(Date.parse(value))) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function firstItem(order: BuyerOrderRow) {
+  return order.items?.[0]?.name || "Inquiry";
+}
+
+export default async function BuyerDashboardPage() {
+  const session = await requireDashboardRolePage("buyer");
+  const email = session.user.email;
+
+  await connectDB();
+  const docs = await OrderModel.find({
+    $or: [{ buyerEmail: email }, { userEmail: email }],
+  })
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
+
+  const orders: BuyerOrderRow[] = JSON.parse(JSON.stringify(docs));
+  const counts = orders.reduce(
+    (acc, order) => {
+      acc.total += 1;
+      if (order.status === "purchased") acc.purchased += 1;
+      else if (order.status === "cancelled") acc.cancelled += 1;
+      else acc.pending += 1;
+      return acc;
+    },
+    { total: 0, purchased: 0, pending: 0, cancelled: 0 }
+  );
+  const recentOrders = orders.slice(0, 5);
 
   return (
-    <main className="p-8 bg-[#F9FAFB] min-h-screen">
-      <h1 className="text-3xl font-bold text-[#0A3D79] mb-2">Welcome, Buyer!</h1>
-      <p className="text-gray-600 mb-8">Here’s a quick overview of your account.</p>
+    <DashboardPage>
+      <DashboardPageHeader
+        title={`Welcome, ${session.user.name || "Buyer"}`}
+        description="Your real WhatsApp inquiries and purchase status updates are collected here."
+        actions={
+          <Link
+            href="/dashboard/buyer/products"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0A3D79] px-4 text-sm font-semibold text-white transition hover:bg-[#124E9C] active:translate-y-px"
+          >
+            <PackageSearch size={17} />
+            Browse products
+          </Link>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <StatCard title="Active Orders" value="3" />
-        <StatCard title="Delivered" value="12" />
-        <StatCard title="Cancelled" value="1" />
-      </div>
+      <MetricGrid>
+        <MetricCard icon={ShoppingBag} label="Total Inquiries" value={counts.total} />
+        <MetricCard
+          icon={CheckCircle2}
+          label="Purchased Orders"
+          value={counts.purchased}
+          tone="emerald"
+        />
+        <MetricCard icon={Clock3} label="Pending Orders" value={counts.pending} tone="amber" />
+        <MetricCard
+          icon={XCircle}
+          label="Cancelled Orders"
+          value={counts.cancelled}
+          tone="rose"
+        />
+      </MetricGrid>
 
-      {/* Recent Orders */}
-      <section className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4 text-[#0A3D79]">Recent Orders</h2>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left border-b bg-gray-50">
-              <th className="pb-2 px-3">Order ID</th>
-              <th className="pb-2 px-3">Date</th>
-              <th className="pb-2 px-3">Status</th>
-              <th className="pb-2 px-3">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => (
-              <tr key={order.id} className="border-b hover:bg-gray-50 transition text-gray-700">
-                <td className="px-3 py-2">{order.id}</td>
-                <td className="px-3 py-2">{order.date}</td>
-                <td className="px-3 py-2">{order.status}</td>
-                <td className="px-3 py-2">{order.amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </main>
+      {orders.length === 0 ? (
+        <EmptyState
+          icon={ShoppingBag}
+          title="No orders yet"
+          description="Start exploring products and continue to WhatsApp when you are ready. Your inquiry will appear here after it is created."
+          action={
+            <Link
+              href="/dashboard/buyer/products"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#0A3D79] px-4 text-sm font-semibold text-white transition hover:bg-[#124E9C] active:translate-y-px"
+            >
+              Explore products
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <section className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_22px_45px_-35px_rgba(15,23,42,0.65)]">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-slate-950">Recent activity</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Latest inquiry changes from your account.
+              </p>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {recentOrders.map((order) => (
+                <div
+                  key={order._id}
+                  className="grid gap-3 py-3 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-950">
+                      {firstItem(order)}
+                    </p>
+                    <p className="mt-1 truncate font-mono text-xs text-slate-500">
+                      {order.orderId || `#${order._id.slice(-6).toUpperCase()}`} ·{" "}
+                      {formatDate(order.createdAt)}
+                    </p>
+                  </div>
+                  <StatusBadge status={order.status} />
+                  <p className="font-mono text-sm font-semibold text-slate-950 sm:text-right">
+                    {formatINR(orderTotal(order))}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <BuyerOrdersTable
+            orders={orders}
+            title="My orders"
+            description="Every inquiry created from your WhatsApp checkout flow."
+          />
+        </>
+      )}
+    </DashboardPage>
   );
 }
 
-function StatCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow text-center">
-      <h3 className="text-[#0A3D79] font-semibold">{title}</h3>
-      <p className="text-2xl font-bold mt-2">{value}</p>
-    </div>
-  );
-}

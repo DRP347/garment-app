@@ -1,15 +1,7 @@
-import "@/app/globals.css";
-import SidebarSeller from "@/components/dashboard/SidebarSeller";
+import { requireDashboardRolePage } from "@/lib/authz";
 
-export default function SellerLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="bg-[#F5F7FB] text-[#111827]">
-        <div className="flex">
-          <SidebarSeller />
-          <main className="flex-1 p-6">{children}</main>
-        </div>
-      </body>
-    </html>
-  );
+export default async function SellerLayout({ children }: { children: React.ReactNode }) {
+  await requireDashboardRolePage("seller");
+
+  return <>{children}</>;
 }

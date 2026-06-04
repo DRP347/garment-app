@@ -1,10 +1,11 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const UserSettingsSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     whatsappNotifications: { type: Boolean, default: true },
     emailNotifications: { type: Boolean, default: true },
+    darkMode: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

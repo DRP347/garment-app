@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useSession } from "next-auth/react";
+import { makeWhatsAppUrl } from "@/lib/siteConfig";
 
 export function Cart() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,13 +30,12 @@ export function Cart() {
   }, [session]);
 
   const handleFinalizeOrder = () => {
-    const clientPhoneNumber = "911234567890"; // // REPLACE with your client's WhatsApp number
     let message = `Hello, The Garment Guy.\nI would like to place an order.\n\n*Partner:* ${session?.user?.name || ''}\n*Business:* ${session?.user?.businessName || ''}\n\n*Order Details:*\n`;
     items.forEach(item => {
       message += `- ${item.name} (SKU: ${item.sku}) - Qty: ${item.quantity}\n`;
     });
     message += `\n*Total Items:* ${totalItems}\n*Estimated Total:* ₹${totalPrice.toFixed(2)}\n\nPlease confirm this order.`;
-    const whatsappUrl = `https://wa.me/${clientPhoneNumber}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = makeWhatsAppUrl(message);
     window.open(whatsappUrl, '_blank');
   };
 

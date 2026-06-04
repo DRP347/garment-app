@@ -1,182 +1,250 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
-import { PackagePlus } from "lucide-react";
+import {
+  Boxes,
+  CheckCircle2,
+  Clock3,
+  Package,
+  PackageCheck,
+  Percent,
+  ShoppingBag,
+  Users,
+} from "lucide-react";
+import connectDB from "@/lib/db";
+import { requireAdminPage } from "@/lib/authz";
+import OrderModel from "@/models/OrderModel";
+import ProductModel from "@/models/ProductModel";
+import UserModel from "@/models/UserModel";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  MetricCard,
+  MetricGrid,
+  StatusBadge,
+} from "@/components/dashboard/DashboardPrimitives";
+import { formatINR } from "@/lib/utils";
 
-type Product = {
+type RecentOrder = {
   _id: string;
-  name: string;
-  images?: string[];
-  price?: number;
-  stock?: number;
-  category?: string;
+  orderId?: string;
+  buyerName?: string;
+  buyerEmail?: string;
+  status?: string;
+  totalAmount?: number;
+  total?: number;
+  updatedAt?: string;
 };
 
-// Utility to ensure all image paths are valid for Next/Image
-function getValidImageSrc(src: string | undefined): string {
-  if (!src) return "/placeholder.png";
-  if (src.startsWith("http") || src.startsWith("/")) return src;
+type RecentProduct = {
+  _id: string;
+  name: string;
+  category?: string;
+  approved?: boolean;
+  sellerId?: string;
+};
 
-  // Clean quotes, Windows paths, and "public/" prefix
-  return (
-    "/" +
-    src
-      .replace(/^["']|["']$/g, "")
-      .replace(/\\/g, "/")
-      .replace(/^public\//, "")
-      .replace(/^\/+/, "")
-  );
+function percentage(part: number, total: number) {
+  if (!total) return "0%";
+  return `${Math.round((part / total) * 100)}%`;
 }
 
-export default function AdminDashboardPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [error, setError] = useState("");
+function orderTotal(order: RecentOrder) {
+  return Number(order.totalAmount ?? order.total ?? 0);
+}
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/admin/products");
-        if (!res.ok) throw new Error("Failed to load products");
-        const data = await res.json();
-        setProducts(data);
-      } catch (err: any) {
-        setError(err.message || "Error fetching products");
-      }
-    };
-    fetchProducts();
-  }, []);
+function formatDate(value?: string) {
+  if (!value || Number.isNaN(Date.parse(value))) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-red-600 font-medium">
-        Error: {error}
-      </div>
-    );
-  }
+export default async function AdminDashboardPage() {
+  await requireAdminPage();
+  await connectDB();
+
+  const [
+    totalProducts,
+    pendingProducts,
+    activeSellers,
+    registeredBuyers,
+    ordersInProcess,
+    completedOrders,
+    cancelledOrders,
+    ignoredOrders,
+    totalOrders,
+    recentOrdersDocs,
+    recentProductsDocs,
+  ] = await Promise.all([
+    ProductModel.countDocuments({}),
+    ProductModel.countDocuments({ approved: false }),
+    UserModel.countDocuments({ role: "seller" }),
+    UserModel.countDocuments({ role: "buyer" }),
+    OrderModel.countDocuments({ status: "in_process" }),
+    OrderModel.countDocuments({ status: "purchased" }),
+    OrderModel.countDocuments({ status: "cancelled" }),
+    OrderModel.countDocuments({ status: "ignored" }),
+    OrderModel.countDocuments({}),
+    OrderModel.find({}).sort({ updatedAt: -1 }).limit(5).lean().exec(),
+    ProductModel.find({}).sort({ createdAt: -1 }).limit(5).lean().exec(),
+  ]);
+
+  const recentOrders: RecentOrder[] = JSON.parse(JSON.stringify(recentOrdersDocs));
+  const recentProducts: RecentProduct[] = JSON.parse(JSON.stringify(recentProductsDocs));
+  const abandonedInquiries = cancelledOrders + ignoredOrders;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9FAFB] via-[#EEF2FF] to-[#EAF1FF] px-6 py-10">
-      {/* ---------- Header ---------- */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-center mb-10"
-      >
-        <div>
-          <h1 className="text-3xl font-bold text-[#0A3D79]">
-            Product Management
-          </h1>
-          <p className="text-gray-500">
-            Manage, edit, and update your product catalog
-          </p>
-        </div>
-        <Link
-          href="/dashboard/admin/products/new"
-          className="flex items-center gap-2 bg-[#0A3D79] text-white px-5 py-2.5 rounded-xl font-medium hover:bg-[#124E9C] transition"
-        >
-          <PackagePlus size={18} />
-          Add Product
-        </Link>
-      </motion.div>
+    <DashboardPage>
+      <DashboardPageHeader
+        title="Admin overview"
+        description="A live operating view of catalogue health, buyer activity, seller participation, and WhatsApp order intent."
+        actions={
+          <>
+            <Link
+              href="/dashboard/admin/products/new"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#0A3D79] px-4 text-sm font-semibold text-white transition hover:bg-[#124E9C] active:translate-y-px"
+            >
+              Add product
+            </Link>
+            <Link
+              href="/dashboard/admin/orders"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:translate-y-px"
+            >
+              Review orders
+            </Link>
+          </>
+        }
+      />
 
-      {/* ---------- Product Table ---------- */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-[#F0F4FF]">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#0A3D79] uppercase tracking-wider">
-                Product
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#0A3D79] uppercase tracking-wider">
-                Price
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#0A3D79] uppercase tracking-wider">
-                Stock
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-[#0A3D79] uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-[#0A3D79] uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
+      <MetricGrid>
+        <MetricCard icon={Package} label="Total Products" value={totalProducts} />
+        <MetricCard
+          icon={Clock3}
+          label="Pending Products"
+          value={pendingProducts}
+          tone="amber"
+        />
+        <MetricCard icon={Users} label="Active Sellers" value={activeSellers} />
+        <MetricCard
+          icon={ShoppingBag}
+          label="Registered Buyers"
+          value={registeredBuyers}
+          tone="slate"
+        />
+        <MetricCard
+          icon={Boxes}
+          label="Orders In Process"
+          value={ordersInProcess}
+          tone="amber"
+        />
+        <MetricCard
+          icon={CheckCircle2}
+          label="Completed Orders"
+          value={completedOrders}
+          tone="emerald"
+        />
+        <MetricCard
+          icon={PackageCheck}
+          label="Abandoned Inquiries"
+          value={abandonedInquiries}
+          tone="rose"
+        />
+        <MetricCard
+          icon={Percent}
+          label="Conversion Rate"
+          value={percentage(completedOrders, totalOrders)}
+          helper={`${completedOrders} purchased of ${totalOrders} total inquiries`}
+        />
+      </MetricGrid>
 
-          <tbody className="bg-white divide-y divide-gray-100">
-            {products.length > 0 ? (
-              products.map((product) => (
-                <motion.tr
-                  key={product._id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="hover:bg-gray-50 transition"
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="relative h-12 w-12">
-                        <Image
-                          src={getValidImageSrc(product.images?.[0])}
-                          alt={product.name || "Product image"}
-                          fill
-                          sizes="48px"
-                          className="rounded-lg object-cover border border-gray-200"
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-semibold text-gray-900">
-                          {product.name}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    ₹{(product.price || 0).toLocaleString()}
-                  </td>
-
-                  <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${
-                      product.stock && product.stock > 10
-                        ? "text-green-600"
-                        : product.stock && product.stock > 0
-                        ? "text-amber-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {product.stock ?? 0}
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {product.category || "Uncategorized"}
-                  </td>
-
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      href={`/dashboard/admin/products/${product._id}`}
-                      className="text-[#0A3D79] hover:text-[#124E9C]"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </motion.tr>
-              ))
+      <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_22px_45px_-35px_rgba(15,23,42,0.65)]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">
+                Recent order activity
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Latest buyer inquiries and status changes.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/admin/orders"
+              className="text-sm font-semibold text-[#0A3D79] hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recentOrders.length === 0 ? (
+              <p className="py-8 text-sm text-slate-500">No order activity yet.</p>
             ) : (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="text-center text-gray-500 py-8 text-sm"
-                >
-                  No products found.
-                </td>
-              </tr>
+              recentOrders.map((order) => (
+                <div key={order._id} className="grid gap-3 py-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-950">
+                      {order.orderId || `#${order._id.slice(-6).toUpperCase()}`}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-slate-500">
+                      {order.buyerName || order.buyerEmail || "Buyer"}
+                    </p>
+                  </div>
+                  <StatusBadge status={order.status} />
+                  <div className="text-left sm:text-right">
+                    <p className="font-mono text-sm font-semibold text-slate-950">
+                      {formatINR(orderTotal(order))}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDate(order.updatedAt)}
+                    </p>
+                  </div>
+                </div>
+              ))
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-[0_22px_45px_-35px_rgba(15,23,42,0.65)]">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-slate-950">
+                Latest products
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                New catalogue entries and seller submissions.
+              </p>
+            </div>
+            <Link
+              href="/dashboard/admin/products"
+              className="text-sm font-semibold text-[#0A3D79] hover:underline"
+            >
+              Manage
+            </Link>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {recentProducts.length === 0 ? (
+              <p className="py-8 text-sm text-slate-500">No products yet.</p>
+            ) : (
+              recentProducts.map((product) => (
+                <div key={product._id} className="flex items-center justify-between gap-3 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-slate-950">
+                      {product.name}
+                    </p>
+                    <p className="mt-1 truncate text-sm capitalize text-slate-500">
+                      {product.category || "Uncategorized"}
+                    </p>
+                  </div>
+                  <StatusBadge status={Boolean(product.approved)} />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+    </DashboardPage>
   );
 }
+

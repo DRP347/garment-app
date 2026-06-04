@@ -32,7 +32,7 @@ export default function NewProductPage() {
     });
 
     setSaving(false);
-    if (!res.ok) return alert((await res.json())?.message || "Create failed");
+    if (!res.ok) return alert(await readErrorMessage(res, "Create failed"));
     router.push("/dashboard/admin/products");
     router.refresh();
   }
@@ -64,6 +64,15 @@ export default function NewProductPage() {
       </form>
     </div>
   );
+}
+
+async function readErrorMessage(res: Response, fallback: string) {
+  try {
+    const data = await res.json();
+    return data?.error || data?.message || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 function Field(props: { icon: React.ReactNode; label: string } & React.InputHTMLAttributes<HTMLInputElement>) {

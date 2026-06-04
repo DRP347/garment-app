@@ -7,12 +7,26 @@ import { Package, DollarSign, BarChart3, ImageIcon, FileText, Trash2 } from "luc
 type ProductInput = {
   _id: string;
   name: string;
-  description: string;
+  description?: string[] | string;
   price: number;
   category: string;
   stock: number;
   images: string[];
 };
+
+function descriptionToTextarea(description: ProductInput["description"]) {
+  if (Array.isArray(description)) return description.join("\n");
+  return description ?? "";
+}
+
+async function readErrorMessage(res: Response, fallback: string) {
+  try {
+    const data = await res.json();
+    return data?.error || data?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function EditProductForm({ product }: { product: ProductInput }) {
   const router = useRouter();
@@ -43,7 +57,7 @@ export default function EditProductForm({ product }: { product: ProductInput }) 
     });
 
     setSaving(false);
-    if (!res.ok) return alert((await res.json())?.message || "Update failed");
+    if (!res.ok) return alert(await readErrorMessage(res, "Update failed"));
     router.push("/dashboard/admin/products");
     router.refresh();
   }
@@ -53,7 +67,7 @@ export default function EditProductForm({ product }: { product: ProductInput }) 
     setDeleting(true);
     const res = await fetch(`/api/admin/products/${product._id}`, { method: "DELETE" });
     setDeleting(false);
-    if (!res.ok) return alert((await res.json())?.message || "Delete failed");
+    if (!res.ok) return alert(await readErrorMessage(res, "Delete failed"));
     router.push("/dashboard/admin/products");
     router.refresh();
   }
@@ -77,7 +91,7 @@ export default function EditProductForm({ product }: { product: ProductInput }) 
         className="max-w-xl mx-auto bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6"
       >
         <Field icon={<Package size={18} />} label="Product Name" name="name" defaultValue={product.name} required />
-        <Textarea icon={<FileText size={18} />} label="Description" name="description" defaultValue={product.description} required />
+        <Textarea icon={<FileText size={18} />} label="Description" name="description" defaultValue={descriptionToTextarea(product.description)} required />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field icon={<DollarSign size={18} />} label="Price" name="price" type="number" step="0.01" defaultValue={product.price} required />

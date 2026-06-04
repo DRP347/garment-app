@@ -4,7 +4,7 @@
  * @returns {string} A safe, web-compatible URL.
  */
 export function normalizeImagePath(path?: string) {
-  if (!path) return "/placeholder.png";
+  if (!path) return "/image/img1.webp";
   const cleaned = path.replace(/\\/g, "/").replace(/"/g, "").trim();
   if (cleaned.startsWith("http")) return cleaned;
   if (!cleaned.startsWith("/")) return `/${cleaned.replace(/^public\//i, "")}`;

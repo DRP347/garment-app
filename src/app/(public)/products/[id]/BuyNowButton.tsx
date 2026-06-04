@@ -1,23 +1,31 @@
 "use client";
 
 import { useState } from "react";
+import { makeWhatsAppUrl } from "@/lib/siteConfig";
 
 type Props = {
+  productId: string;
   productName: string;
   price: number;
   type: string;
+  image?: string;
+  sellerId?: string;
   isSoldOut?: boolean;
 };
 
 export default function BuyNowButton({
+  productId,
   productName,
   price,
   type,
+  image,
+  sellerId,
   isSoldOut = false,
 }: Props) {
   const [moq, setMoq] = useState("8");
+  const [loading, setLoading] = useState(false);
 
-  const handleBuy = () => {
+  const fallbackWhatsAppUrl = () => {
     const message = `
 🧾 New Garment Guy Order!
 
@@ -34,11 +42,50 @@ Details:
 Please confirm availability.
     `;
 
-    const url = `https://wa.me/917861988279?text=${encodeURIComponent(
-      message
-    )}`;
+    return makeWhatsAppUrl(message);
+  };
 
-    window.open(url, "_blank");
+  const handleBuy = async () => {
+    if (isSoldOut || loading) return;
+
+    const waTab = window.open("about:blank", "_blank");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              productId,
+              name: productName,
+              image,
+              price,
+              quantity: Number(moq),
+              sellerId,
+            },
+          ],
+          totalAmount: price * Number(moq),
+        }),
+      });
+
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      const whatsappURL =
+        res.ok && typeof data.whatsappURL === "string"
+          ? data.whatsappURL
+          : fallbackWhatsAppUrl();
+
+      if (waTab) waTab.location.href = whatsappURL;
+      else window.open(whatsappURL, "_blank");
+    } catch {
+      const whatsappURL = fallbackWhatsAppUrl();
+      if (waTab) waTab.location.href = whatsappURL;
+      else window.open(whatsappURL, "_blank");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,14 +111,14 @@ Please confirm availability.
       {/* BUTTON */}
       <button
         onClick={handleBuy}
-        disabled={isSoldOut}
+        disabled={isSoldOut || loading}
         className={`mt-6 w-full py-3 rounded-lg font-semibold transition ${
           isSoldOut
             ? "bg-gray-300 text-gray-600 cursor-not-allowed"
             : "bg-[#0A3D79] text-white hover:bg-[#08325f]"
         }`}
       >
-        {isSoldOut ? "Sold Out" : "Buy Now on WhatsApp"}
+        {isSoldOut ? "Sold Out" : loading ? "Opening WhatsApp..." : "Buy Now on WhatsApp"}
       </button>
     </div>
   );

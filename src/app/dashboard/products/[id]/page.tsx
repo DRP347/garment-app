@@ -57,7 +57,7 @@ export default async function ProductDetailPage({
             src={normalizeImagePath(product.images?.[0])}
             alt={product.name}
             fill
-            sizes="100%"
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
           />
         </motion.div>

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { makeWhatsAppUrl } from "@/lib/siteConfig";
 
 type Product = {
   _id: string;
@@ -10,6 +11,7 @@ type Product = {
   price: number;
   images?: string[];
   category?: string;
+  sellerId?: string;
 };
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -17,7 +19,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const images = product.images?.length
     ? product.images
-    : ["/placeholder.png"];
+    : ["/image/img1.webp"];
 
   const name = product.name.toLowerCase();
 
@@ -51,9 +53,45 @@ Details:
 Please confirm availability.
   `;
 
-  const whatsappUrl = `https://wa.me/917861988279?text=${encodeURIComponent(
-    message
-  )}`;
+  const whatsappUrl = makeWhatsAppUrl(message);
+
+  const handleBuy = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+
+    const waTab = window.open("about:blank", "_blank");
+
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              productId: product._id,
+              name: product.name,
+              image: images[0],
+              price: product.price || 0,
+              quantity: 8,
+              sellerId: product.sellerId,
+            },
+          ],
+          totalAmount: (product.price || 0) * 8,
+        }),
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      const targetUrl =
+        res.ok && typeof data.whatsappURL === "string"
+          ? data.whatsappURL
+          : whatsappUrl;
+
+      if (waTab) waTab.location.href = targetUrl;
+      else window.open(targetUrl, "_blank");
+    } catch {
+      if (waTab) waTab.location.href = whatsappUrl;
+      else window.open(whatsappUrl, "_blank");
+    }
+  };
 
   return (
     <div
@@ -70,6 +108,7 @@ Please confirm availability.
             src={hovered ? images[1] || images[0] : images[0]}
             alt={product.name}
             fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className={`object-cover transition duration-300 ${
               isSoldOut ? "grayscale" : "group-hover:scale-105"
             }`}
@@ -118,15 +157,13 @@ Please confirm availability.
             Sold Out
           </span>
         ) : (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+          <button
+            type="button"
+            onClick={handleBuy}
             className="flex-1 text-center bg-[#0A3D79] text-white py-2 rounded-lg text-sm font-medium hover:bg-[#08325f]"
           >
             Buy
-          </a>
+          </button>
         )}
       </div>
 

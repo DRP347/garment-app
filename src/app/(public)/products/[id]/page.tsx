@@ -9,6 +9,7 @@ type Product = {
   price: number;
   images?: string[];
   category?: string;
+  sellerId?: string;
 };
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ async function getProduct(id: string): Promise<Product | null> {
 
     const product = await db
       .collection("products")
-      .findOne({ _id: new ObjectId(id) });
+      .findOne({ _id: new ObjectId(id), approved: true });
 
     return product ? JSON.parse(JSON.stringify(product)) : null;
   } catch (err) {
@@ -44,7 +45,7 @@ export default async function ProductPage({
   const images =
     product.images && product.images.length > 0
       ? product.images
-      : ["/placeholder.png"];
+      : ["/image/img1.webp"];
 
   // ✅ Sleeve Detection
   const name = product.name.toLowerCase();
@@ -97,11 +98,14 @@ export default async function ProductPage({
 
           {/* ✅ BUY BUTTON */}
           <BuyNowButton
-  productName={product.name}
-  price={product.price || 0}
-  type={type}
-  isSoldOut={isSoldOut}
-/>
+            productId={product._id}
+            productName={product.name}
+            price={product.price || 0}
+            type={type}
+            image={images[0]}
+            sellerId={product.sellerId}
+            isSoldOut={isSoldOut}
+          />
 
         </div>
       </div>

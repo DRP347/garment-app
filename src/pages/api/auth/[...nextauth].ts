@@ -5,6 +5,17 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/db";
 import User from "@/models/UserModel";
 
+type UserRole = "admin" | "buyer" | "seller";
+type AuthUserRecord = {
+  _id: { toString: () => string };
+  name: string;
+  email: string;
+  password: string;
+  role?: UserRole;
+  status?: string;
+  businessName?: string;
+};
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -16,13 +27,14 @@ export const authOptions: NextAuthOptions = {
 
       async authorize(credentials) {
         if (!credentials) return null;
+        const email = String(credentials.email || "").trim().toLowerCase();
+        if (!email || !credentials.password) return null;
 
         await connectDB();
 
-        // CAST AS ANY (fixes _id, name, email TS errors)
         const user = (await User.findOne({
-          email: credentials.email,
-        }).lean()) as any;
+          email,
+        }).lean()) as AuthUserRecord | null;
 
         if (!user) return null;
 
@@ -33,7 +45,9 @@ export const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          role: user.role,
+          role: user.role || "buyer",
+          status: user.status,
+          businessName: user.businessName,
         };
       },
     }),
@@ -43,11 +57,21 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.role = (user as any).role;
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.status = user.status;
+        token.businessName = user.businessName;
+      }
       return token;
     },
     async session({ session, token }) {
-      (session.user as any).role = token.role;
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.status = token.status;
+        session.user.businessName = token.businessName;
+      }
       return session;
     },
   },

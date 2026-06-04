@@ -12,6 +12,7 @@ export interface UserDoc extends Document {
   businessName?: string;
   businessType?: string;
   accountType?: string;
+  location?: string;
 }
 
 const UserSchema = new Schema<UserDoc>(
@@ -26,6 +27,7 @@ const UserSchema = new Schema<UserDoc>(
     businessName: String,
     businessType: String,
     accountType: String,
+    location: String,
   },
   { timestamps: true }
 );

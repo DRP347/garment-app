@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { makeWhatsAppUrl } from "@/lib/siteConfig";
 
 export default function AddToCartClient({
   product,
@@ -27,9 +28,7 @@ ${product.description?.map((d) => `• ${d}`).join("\n") || ""}
 
 Please confirm availability.`;
 
-    const url = `https://wa.me/91XXXXXXXXXX?text=${encodeURIComponent(
-      message
-    )}`;
+    const url = makeWhatsAppUrl(message);
 
     window.open(url, "_blank");
   };

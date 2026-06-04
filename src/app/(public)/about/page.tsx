@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { makeWhatsAppUrl, siteConfig } from "@/lib/siteConfig";
 
 export default function AboutPage() {
   return (
@@ -93,11 +94,11 @@ export default function AboutPage() {
             <p className="mt-6">
               Chat with us on {" "}
               <a
-                href="https://wa.me/917861988279"
+                href={makeWhatsAppUrl()}
                 target="_blank"
                 className="text-white underline font-semibold"
               >
-                WhatsApp +91 78619 88279
+                WhatsApp +91 {siteConfig.whatsappDisplay}
               </a>
             </p>
           </motion.div>
@@ -155,7 +156,7 @@ export default function AboutPage() {
           high-quality production.
         </p>
         <a
-          href="https://wa.me/917861988279"
+          href={makeWhatsAppUrl()}
           target="_blank"
           className="bg-white text-[#0A3D79] px-8 py-3 rounded-md font-semibold hover:bg-gray-100 transition"
         >

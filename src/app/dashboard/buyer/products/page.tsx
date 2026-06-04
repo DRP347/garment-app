@@ -1,44 +1,95 @@
-"use client";
+import Link from "next/link";
+import { PackageSearch } from "lucide-react";
+import connectDB from "@/lib/db";
+import { requireDashboardRolePage } from "@/lib/authz";
+import OrderModel from "@/models/OrderModel";
+import BuyerProductsTable, {
+  type BuyerProductRow,
+} from "@/components/dashboard/BuyerProductsTable";
+import {
+  DashboardPage,
+  DashboardPageHeader,
+  EmptyState,
+} from "@/components/dashboard/DashboardPrimitives";
 
-export default function BuyerProductsPage() {
-  const products = [
-    { id: "P001", name: "Cotton T-Shirt", category: "Tops", price: "₹799", status: "Available" },
-    { id: "P002", name: "Denim Jacket", category: "Outerwear", price: "₹1,999", status: "Out of Stock" },
-    { id: "P003", name: "Cargo Pants", category: "Bottomwear", price: "₹1,499", status: "Available" },
-    { id: "P004", name: "Hoodie Classic", category: "Hoodies", price: "₹1,299", status: "Available" },
-  ];
+type BuyerOrder = {
+  _id: string;
+  orderId?: string;
+  status?: string;
+  createdAt?: string;
+  items?: {
+    productId?: string;
+    name?: string;
+    image?: string;
+    price?: number;
+    quantity?: number;
+  }[];
+};
 
-  return (
-    <main className="p-8 bg-[#F9FAFB] min-h-screen">
-      <h1 className="text-3xl font-bold text-[#0A3D79] mb-2">Your Products</h1>
-      <p className="text-gray-600 mb-6">Manage your purchased or favorited products.</p>
-
-      <section className="bg-white p-6 rounded-lg shadow">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="text-left border-b bg-gray-50">
-              <th className="pb-3 px-3">Product ID</th>
-              <th className="pb-3 px-3">Name</th>
-              <th className="pb-3 px-3">Category</th>
-              <th className="pb-3 px-3">Price</th>
-              <th className="pb-3 px-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id} className="border-b hover:bg-gray-50 text-gray-700">
-                <td className="px-3 py-2">{p.id}</td>
-                <td className="px-3 py-2 font-medium">{p.name}</td>
-                <td className="px-3 py-2">{p.category}</td>
-                <td className="px-3 py-2">{p.price}</td>
-                <td className={`px-3 py-2 font-semibold ${p.status === "Available" ? "text-green-600" : "text-red-500"}`}>
-                  {p.status}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-    </main>
+function productsFromOrders(orders: BuyerOrder[]): BuyerProductRow[] {
+  return orders.flatMap((order) =>
+    (order.items || []).map((item, index) => ({
+      id: `${order._id}-${item.productId || index}`,
+      productId: item.productId,
+      name: item.name || "Product",
+      image: item.image,
+      price: item.price,
+      quantity: item.quantity,
+      status: order.status,
+      orderId: order.orderId,
+      createdAt: order.createdAt,
+    }))
   );
 }
+
+export default async function BuyerProductsPage() {
+  const session = await requireDashboardRolePage("buyer");
+
+  await connectDB();
+  const docs = await OrderModel.find({
+    $or: [{ buyerEmail: session.user.email }, { userEmail: session.user.email }],
+  })
+    .sort({ createdAt: -1 })
+    .lean()
+    .exec();
+
+  const orders: BuyerOrder[] = JSON.parse(JSON.stringify(docs));
+  const products = productsFromOrders(orders);
+
+  return (
+    <DashboardPage>
+      <DashboardPageHeader
+        title="My products"
+        description="Products appear here only after you inquire about or purchase them."
+        actions={
+          <Link
+            href="/products"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[#0A3D79] px-4 text-sm font-semibold text-white transition hover:bg-[#124E9C] active:translate-y-px"
+          >
+            <PackageSearch size={17} />
+            Browse products
+          </Link>
+        }
+      />
+
+      {products.length === 0 ? (
+        <EmptyState
+          icon={PackageSearch}
+          title="No products yet"
+          description="Products you inquire about or purchase will appear here."
+          action={
+            <Link
+              href="/products"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-[#0A3D79] px-4 text-sm font-semibold text-white transition hover:bg-[#124E9C] active:translate-y-px"
+            >
+              Browse products
+            </Link>
+          }
+        />
+      ) : (
+        <BuyerProductsTable products={products} />
+      )}
+    </DashboardPage>
+  );
+}
+

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IProduct extends Document {
   name: string;
+  sku?: string;
   description: string[]; // ✅ array (IMPORTANT)
   images: string[];
   price: number;
@@ -14,6 +15,10 @@ export interface IProduct extends Document {
     sleeve?: "short" | "long";
     fabric?: string;
     moq?: number;
+    sizes?: string[];
+    colors?: string[];
+    pdfUrl?: string;
+    sellerNotes?: string;
   };
 
   approved: boolean;
@@ -25,6 +30,11 @@ export interface IProduct extends Document {
 const ProductSchema = new Schema<IProduct>(
   {
     name: { type: String, required: true, trim: true },
+
+    sku: {
+      type: String,
+      trim: true,
+    },
 
     description: {
       type: [String], // ✅ FIXED
@@ -64,6 +74,16 @@ const ProductSchema = new Schema<IProduct>(
       },
       fabric: String,
       moq: Number,
+      sizes: {
+        type: [String],
+        default: undefined,
+      },
+      colors: {
+        type: [String],
+        default: undefined,
+      },
+      pdfUrl: String,
+      sellerNotes: String,
     },
 
     approved: {

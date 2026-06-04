@@ -10,7 +10,16 @@ export default function AddToCartButton({ product }: { product: IProduct }) {
   return (
     <div className="mt-8">
       <button
-        onClick={() => addToCart(product)}
+        onClick={() =>
+          addToCart({
+            _id: String(product._id),
+            name: product.name,
+            price: product.price,
+            image: product.images?.[0],
+            sellerId: product.sellerId,
+            quantity: 20,
+          })
+        }
         className="w-full flex items-center justify-center gap-2 py-3 bg-brand-blue text-white rounded-lg font-semibold hover:bg-brand-blue-dark transition-colors"
       >
         <ShoppingCart size={20} />

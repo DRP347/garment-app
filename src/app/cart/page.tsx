@@ -25,19 +25,22 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: cart.map((i) => ({
+            productId: i._id ?? i.id,
             name: i.name,
+            image: i.image,
             quantity: i.quantity,
             price: i.price,
           })),
           totalAmount: total,
         }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
       if (!res.ok || !data.whatsappURL) throw new Error("No WA link");
       waTab!.location.href = data.whatsappURL;
       clearCart();
       toast.success("Redirecting to WhatsApp…");
-    } catch (e) {
+    } catch {
       waTab?.close();
       toast.error("Checkout failed");
     } finally {
@@ -74,8 +77,9 @@ export default function CartPage() {
               <div className="relative w-full sm:w-32 h-64 sm:h-32 rounded-lg overflow-hidden bg-gray-50">
                 <Image
                   fill
-                  src={item.image || "/placeholder.jpg"}
+                  src={item.image || "/image/img1.webp"}
                   alt={item.name}
+                  sizes="(max-width: 640px) 100vw, 128px"
                   className="object-cover"
                 />
               </div>

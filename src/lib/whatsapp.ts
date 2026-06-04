@@ -1,3 +1,5 @@
+import { siteConfig } from "@/lib/siteConfig";
+
 export function makeWhatsAppCheckoutLink({
   phoneE164,      // e.g. "919876543210" without +
   items,
@@ -30,7 +32,6 @@ export function makeWhatsAppCheckoutLink({
   ].filter(Boolean) as string[];
 
   const text = encodeURIComponent(lines.join("\n"));
-  // ✅ Default to your business WhatsApp number
-  const finalNumber = phoneE164 || "917861988279";
+  const finalNumber = phoneE164 || siteConfig.whatsappNumber;
   return `https://wa.me/${finalNumber}?text=${text}`;
 }

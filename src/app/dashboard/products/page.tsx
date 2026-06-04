@@ -75,7 +75,13 @@ export default function SellerProducts() {
               <tr key={p._id} className="border-b">
                 <td className="p-3 flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded overflow-hidden border">
-                    <Image src={normalizeImagePath(p.images?.[0])} alt={p.name} fill className="object-cover"/>
+                    <Image
+                      src={normalizeImagePath(p.images?.[0])}
+                      alt={p.name}
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
                   </div>
                   {p.name}
                 </td>

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useCart } from "@/context/CartContext";
-import { useSession, signOut } from "next-auth/react";
-import { ShoppingCart, LogOut, Menu, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { ShoppingCart, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Navbar() {
@@ -13,17 +13,11 @@ export default function Navbar() {
   const { cart } = useCart();
   const [open, setOpen] = useState(false);
 
-  const logout = () => signOut({ callbackUrl: "/login" });
-
-  const navLinks = useMemo(
-    () => [
-      { href: "/", label: "Home" },
-      { href: "/about", label: "About" },
-      { href: "/products", label: "Products" },
-      ...(session ? [{ href: "/orders", label: "Orders" }] : []),
-    ],
-    [session]
-  );
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/about", label: "About" },
+    { href: "/products", label: "Products" },
+  ];
 
   return (
     <nav className="w-full bg-white fixed top-0 left-0 z-50 shadow-sm backdrop-blur-lg">
@@ -38,7 +32,7 @@ export default function Navbar() {
             width={28}
             height={28}
             priority
-            className="object-contain bg-white rounded-full p-0.5"
+            className="h-7 w-7 rounded-full bg-white object-contain p-0.5"
           />
           <span className="font-semibold text-sm sm:text-base tracking-wide">
             The Garment Guy
@@ -56,6 +50,15 @@ export default function Navbar() {
             </Link>
           ))}
 
+          {session && (
+            <Link
+              href="/dashboard"
+              className="text-gray-700 hover:text-[#0A3D79] font-medium transition"
+            >
+              Dashboard
+            </Link>
+          )}
+
           <Link href="/cart" className="relative text-[#0A3D79]" aria-label="Cart">
             <ShoppingCart className="w-5 h-5" />
             {Array.isArray(cart) && cart.length > 0 && (
@@ -65,16 +68,9 @@ export default function Navbar() {
             )}
           </Link>
 
-          {session ? (
-            <button
-              onClick={logout}
-              className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] font-medium transition"
-            >
-              <LogOut size={16} /> Logout
-            </button>
-          ) : (
+          {!session && (
             <Link
-              href="/login"
+              href="/register"
               className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C] transition font-medium"
             >
               Start a Brand
@@ -113,6 +109,16 @@ export default function Navbar() {
                 </Link>
               ))}
 
+              {session && (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="block text-gray-700 hover:text-[#0A3D79] text-base font-medium"
+                >
+                  Dashboard
+                </Link>
+              )}
+
               <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 <Link
                   href="/cart"
@@ -128,19 +134,9 @@ export default function Navbar() {
                   )}
                 </Link>
 
-                {session ? (
-                  <button
-                    onClick={() => {
-                      setOpen(false);
-                      logout();
-                    }}
-                    className="flex items-center gap-1 text-[#0A3D79] hover:text-[#124E9C] font-medium transition"
-                  >
-                    <LogOut size={14} /> Logout
-                  </button>
-                ) : (
+                {!session && (
                   <Link
-                    href="/login"
+                    href="/register"
                     onClick={() => setOpen(false)}
                     className="bg-[#0A3D79] text-white px-4 py-1.5 rounded-md hover:bg-[#124E9C] transition font-medium"
                   >

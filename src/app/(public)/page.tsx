@@ -4,8 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
-import TopwearSection from "@/components/sections/TopwearSection";
 import { Factory, ShieldCheck, Leaf, Quote, Phone, Mail } from "lucide-react";
+import { makeWhatsAppUrl, siteConfig } from "@/lib/siteConfig";
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -264,11 +264,11 @@ export default function HomePage() {
             <p className="text-sm text-gray-600 mt-3">
               Or reach us on{" "}
               <a
-                href="https://wa.me/917861988279"
+                href={makeWhatsAppUrl()}
                 target="_blank"
                 className="text-[#0A3D79] font-semibold hover:underline"
               >
-                WhatsApp +91 78619 88279
+                WhatsApp +91 {siteConfig.whatsappDisplay}
               </a>
             </p>
           </form>
@@ -293,14 +293,14 @@ export default function HomePage() {
                 </Link>
               </li>
               <li>
-                <a href="/#about" className="hover:text-white">
+                <Link href="/#about" className="hover:text-white">
                   About
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="/#contact" className="hover:text-white">
+                <Link href="/#contact" className="hover:text-white">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -310,11 +310,11 @@ export default function HomePage() {
               Daman, India <br />
               <Phone size={14} className="inline mx-1" />{" "}
               <a
-                href="https://wa.me/917861988279"
+                href={makeWhatsAppUrl()}
                 target="_blank"
                 className="hover:underline"
               >
-                +91 78619 88279
+                +91 {siteConfig.whatsappDisplay}
               </a>
               <br />
               <Mail size={14} className="inline mx-1" /> contact@thegarmentguy.com

@@ -12,7 +12,7 @@ export default function ResetPasswordPage() {
     
     const params = useParams();
     const router = useRouter();
-    const token = params.token as string;
+    const token = String(params?.token ?? '');
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -38,7 +38,7 @@ export default function ResetPasswordPage() {
             } else {
                 setError(data.message);
             }
-        } catch (err) {
+        } catch {
             setError('An unknown error occurred.');
         } finally {
             setIsSubmitting(false);

@@ -4,6 +4,17 @@ import connectDB from "./lib/db";
 import User from "./models/UserModel";
 import bcrypt from "bcryptjs";
 
+type UserRole = "admin" | "buyer" | "seller";
+type AuthUserRecord = {
+  _id: { toString: () => string };
+  email: string;
+  name: string;
+  password: string;
+  role?: UserRole;
+  status?: string;
+  businessName?: string;
+};
+
 const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
@@ -18,9 +29,13 @@ const authOptions: NextAuthOptions = {
 
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
+        const email = String(credentials.email || "").trim().toLowerCase();
+        if (!email) return null;
 
         await connectDB();
-        const user = await User.findOne({ email: credentials.email });
+        const user = (await User.findOne({
+          email,
+        }).lean()) as AuthUserRecord | null;
 
         if (!user) return null;
 
@@ -31,6 +46,9 @@ const authOptions: NextAuthOptions = {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
+          role: user.role || "buyer",
+          status: user.status,
+          businessName: user.businessName,
         };
       },
     }),
@@ -38,12 +56,22 @@ const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+        token.status = user.status;
+        token.businessName = user.businessName;
+      }
       return token;
     },
 
     async session({ session, token }) {
-      if (session.user && token.id) session.user.id = token.id as string;
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.status = token.status;
+        session.user.businessName = token.businessName;
+      }
       return session;
     },
   },

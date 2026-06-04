@@ -1,8 +1,8 @@
 import "./globals.css";
-import Navbar from "@/components/Navbar";
 import ClientProviders from "@/components/ClientProviders";
+import AppShell from "@/components/AppShell";
 import Script from "next/script";
-
+import { Analytics } from "@vercel/analytics/next"
 export const metadata = {
   title: "The Garment Guy — Trusted Clothing Manufacturer",
   description:
@@ -52,9 +52,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           name="google-site-verification"
           content="PASTE_YOUR_VERIFICATION_CODE"
         />
+      </head>
 
+      <body suppressHydrationWarning className="bg-white text-[#0A3D79]">
         {/* GOOGLE ANALYTICS */}
-        <Script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX" />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+          strategy="afterInteractive"
+        />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -103,12 +108,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             alt=""
           />
         </noscript>
-      </head>
 
-      <body suppressHydrationWarning className="bg-white text-[#0A3D79]">
         <ClientProviders>
-          <Navbar />
-          <main className="pt-[56px] md:pt-[64px]">{children}</main>
+          <AppShell>{children}</AppShell>
         </ClientProviders>
       </body>
     </html>

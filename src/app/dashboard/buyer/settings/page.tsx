@@ -7,9 +7,9 @@ interface SettingsForm {
   email: string;
   phone: string;
   address: string;
-  password: string;
-  notifications: boolean;
+  emailNotifications: boolean;
   darkMode: boolean;
+  role: string;
 }
 
 export default function BuyerSettingsPage() {
@@ -18,9 +18,9 @@ export default function BuyerSettingsPage() {
     email: "",
     phone: "",
     address: "",
-    password: "",
-    notifications: true,
+    emailNotifications: true,
     darkMode: false,
+    role: "buyer",
   });
 
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,12 @@ export default function BuyerSettingsPage() {
         const res = await fetch("/api/user/settings", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
-          setForm((prev) => ({ ...prev, ...data }));
+          setForm((prev) => ({
+            ...prev,
+            ...data,
+            emailNotifications:
+              data.emailNotifications ?? data.notifications ?? true,
+          }));
         }
       } catch (err) {
         console.error("Error fetching settings:", err);
@@ -45,7 +50,10 @@ export default function BuyerSettingsPage() {
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const checked =
+      e.target instanceof HTMLInputElement ? e.target.checked : false;
+
     setForm({ ...form, [name]: type === "checkbox" ? checked : value });
   };
 
@@ -55,9 +63,15 @@ export default function BuyerSettingsPage() {
     setSaving(true);
     try {
       const res = await fetch("/api/user/settings", {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          address: form.address,
+          emailNotifications: form.emailNotifications,
+          darkMode: form.darkMode,
+        }),
       });
       if (res.ok) alert("Settings updated successfully!");
       else alert("Failed to update settings.");
@@ -79,7 +93,7 @@ export default function BuyerSettingsPage() {
   return (
     <main className="p-8 bg-[#F9FAFB] min-h-screen">
       <h1 className="text-3xl font-bold text-[#0A3D79] mb-2">Account Settings</h1>
-      <p className="text-gray-600 mb-6">Manage your profile, preferences, and privacy settings.</p>
+      <p className="text-gray-600 mb-6">Manage your profile and dashboard preferences.</p>
 
       <form
         onSubmit={handleSubmit}
@@ -107,10 +121,12 @@ export default function BuyerSettingsPage() {
                 type="email"
                 name="email"
                 value={form.email}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#0A3D79]"
-                placeholder="Enter your email"
+                readOnly
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 p-3 text-gray-500"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Email changes are handled by account support.
+              </p>
             </div>
 
             <div>
@@ -139,22 +155,6 @@ export default function BuyerSettingsPage() {
           </div>
         </section>
 
-        {/* Security */}
-        <section>
-          <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">Security</h2>
-          <div>
-            <label className="block font-semibold text-gray-700 mb-1">Change Password</label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-[#0A3D79]"
-              placeholder="Enter new password"
-            />
-          </div>
-        </section>
-
         {/* Preferences */}
         <section>
           <h2 className="text-xl font-semibold text-[#0A3D79] mb-4">Preferences</h2>
@@ -162,8 +162,8 @@ export default function BuyerSettingsPage() {
             <label className="flex items-center gap-3">
               <input
                 type="checkbox"
-                name="notifications"
-                checked={form.notifications}
+                name="emailNotifications"
+                checked={form.emailNotifications}
                 onChange={handleChange}
                 className="w-5 h-5 text-[#0A3D79]"
               />

@@ -5,20 +5,16 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LogIn } from "lucide-react";
 
-export default function LoginSuccess({
-  role = "buyer",
-}: {
-  role?: "buyer" | "seller";
-}) {
+export default function LoginSuccess() {
   const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push(role === "seller" ? "/seller/dashboard" : "/dashboard");
+      router.push("/dashboard");
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, [role, router]);
+  }, [router]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#F5F8FC] to-[#E8EEF6] p-4 text-center">

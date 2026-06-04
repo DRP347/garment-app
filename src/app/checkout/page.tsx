@@ -12,7 +12,13 @@ type LineItem = {
   name: string;
   price: number;
   quantity: number;
+  image?: string;
+  sellerId?: string;
   size?: number;
+};
+
+type MetaPixelWindow = Window & {
+  fbq?: (command: string, event: string, params?: Record<string, unknown>) => void;
 };
 
 export default function CheckoutPage() {
@@ -61,8 +67,13 @@ export default function CheckoutPage() {
 
     try {
       // Fire INITIATE CHECKOUT event
-      if (typeof window !== "undefined" && (window as any).fbq) {
-        (window as any).fbq("track", "InitiateCheckout");
+      const fbq =
+        typeof window !== "undefined"
+          ? (window as MetaPixelWindow).fbq
+          : undefined;
+
+      if (fbq) {
+        fbq("track", "InitiateCheckout");
       }
 
       // Refresh server cart again
@@ -81,12 +92,20 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: serverItems,
+          items: serverItems.map((item) => ({
+            productId: item._id ?? item.id,
+            name: item.name,
+            image: item.image,
+            price: item.price,
+            quantity: item.quantity,
+            sellerId: item.sellerId,
+          })),
           totalAmount: serverTotal,
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
 
       if (!res.ok) {
         console.log("ORDER ERROR:", data);
@@ -94,8 +113,8 @@ export default function CheckoutPage() {
       }
 
       // Fire PURCHASE event
-      if (typeof window !== "undefined" && (window as any).fbq) {
-        (window as any).fbq("track", "Purchase", {
+      if (fbq) {
+        fbq("track", "Purchase", {
           value: serverTotal,
           currency: "INR",
         });
