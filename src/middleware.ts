@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import type { NextRequest } from "next/server";
+import { authDebug, getAuthSecret } from "./lib/auth-secret";
 
 function dashboardPathForRole(role?: unknown) {
   if (role === "admin") return "/dashboard/admin";
@@ -24,7 +25,13 @@ export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: getAuthSecret(),
+  });
+
+  authDebug("middleware token", {
+    pathname,
+    hasToken: Boolean(token),
+    role: token?.role,
   });
 
   if (pathname === "/after-login") {

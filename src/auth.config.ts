@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import connectDB from "./lib/db";
 import User from "./models/UserModel";
 import bcrypt from "bcryptjs";
+import { authDebug, getAuthSecret } from "./lib/auth-secret";
 
 type UserRole = "admin" | "buyer" | "seller";
 type AuthUserRecord = {
@@ -15,7 +16,8 @@ type AuthUserRecord = {
   businessName?: string;
 };
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
+  secret: getAuthSecret(),
   session: { strategy: "jwt" },
 
   providers: [
@@ -37,16 +39,25 @@ const authOptions: NextAuthOptions = {
           email,
         }).lean()) as AuthUserRecord | null;
 
-        if (!user) return null;
+        if (!user) {
+          authDebug("credentials user not found", { email });
+          return null;
+        }
 
         const match = await bcrypt.compare(credentials.password, user.password);
-        if (!match) return null;
+        if (!match) {
+          authDebug("credentials password mismatch", { email });
+          return null;
+        }
+
+        const role = user.role || "buyer";
+        authDebug("credentials authorized", { email: user.email, role });
 
         return {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
-          role: user.role || "buyer",
+          role,
           status: user.status,
           businessName: user.businessName,
         };
@@ -58,9 +69,15 @@ const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
         token.role = user.role;
         token.status = user.status;
         token.businessName = user.businessName;
+        authDebug("jwt populated from user", {
+          email: user.email,
+          role: user.role,
+        });
       }
       return token;
     },
@@ -68,9 +85,15 @@ const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
+        session.user.email = token.email || session.user.email;
+        session.user.name = token.name || session.user.name;
         session.user.role = token.role;
         session.user.status = token.status;
         session.user.businessName = token.businessName;
+        authDebug("session populated from token", {
+          email: session.user.email,
+          role: session.user.role,
+        });
       }
       return session;
     },

@@ -34,3 +34,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Production Auth Environment
+
+Set these environment variables in Vercel for Production, Preview, and
+Development:
+
+- `NEXTAUTH_URL=https://www.thegarmentguy.in`
+- `NEXTAUTH_SECRET=<strong random secret>`
+- `MONGODB_URI=<production MongoDB URI>`
+
+If `AUTH_SECRET` is also configured, keep it identical to `NEXTAUTH_SECRET` so
+the NextAuth route, middleware, and server-side session checks all read the same
+JWT secret.
+
+Create or update the admin user with:
+
+```bash
+ADMIN_EMAIL="Thegarmentguy291@gmail.com" ADMIN_PASSWORD="<password>" npm run create-admin
+```
+
+Do not commit real passwords or secrets.

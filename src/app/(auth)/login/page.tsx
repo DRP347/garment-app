@@ -19,14 +19,16 @@ export default function LoginPage() {
       redirect: false,
       email,
       password,
+      callbackUrl: "/dashboard",
     });
     setLoading(false);
 
-    if (res?.error) {
+    if (res?.error || !res?.ok) {
       toast.error("Invalid email or password");
     } else {
       toast.success("Welcome back!");
-      router.push("/dashboard");
+      router.replace(res.url || "/dashboard");
+      router.refresh();
     }
   };
 
@@ -38,10 +40,15 @@ export default function LoginPage() {
         </h1>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-600">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-gray-600"
+            >
               Email Address
             </label>
             <input
+              id="email"
+              name="email"
               type="email"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
@@ -50,8 +57,15 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600">Password</label>
+            <label
+              htmlFor="password"
+              className="text-sm font-medium text-gray-600"
+            >
+              Password
+            </label>
             <input
+              id="password"
+              name="password"
               type="password"
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-[#0A3D79]/30"
