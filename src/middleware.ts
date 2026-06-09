@@ -21,17 +21,26 @@ function requiredRoleForDashboardPath(pathname: string) {
   return null;
 }
 
+function usesSecureAuthCookie(req: NextRequest) {
+  return (
+    req.nextUrl.protocol === "https:" ||
+    req.headers.get("x-forwarded-proto") === "https"
+  );
+}
+
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const token = await getToken({
     req,
     secret: getAuthSecret(),
+    secureCookie: usesSecureAuthCookie(req),
   });
 
   authDebug("middleware token", {
     pathname,
     hasToken: Boolean(token),
     role: token?.role,
+    secureCookie: usesSecureAuthCookie(req),
   });
 
   if (pathname === "/after-login") {
